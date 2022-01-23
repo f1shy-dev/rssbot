@@ -1,0 +1,6 @@
+name = "fakerss"
+type = "webpack"
+
+account_id = "83d29b81e564bb4248accc93bbefcf31"
+workers_dev = true
+compatibility_date = "2022-01-23"
