@@ -1,7 +1,13 @@
 import { FakeRSSResponse } from './response'
 // bot will send nothing to user
 
-const escape = s => s.replace(/</g, '&lt;').replace(/>/g, '&gt;')
+const esc = s =>
+    `<p>${s
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/<b>/g, '<strong>')
+        .replace(/<\/b>/g, '</strong>')}</p>`
+
 export const ignoreData = () =>
     FakeRSSResponse({
         response: '',
@@ -11,7 +17,7 @@ export const ignoreData = () =>
 
 export const textData = text =>
     FakeRSSResponse({
-        response: escape(text),
+        response: esc(text),
         sendResponse: true,
         responseType: 'text',
         status: 'ok',
@@ -27,7 +33,7 @@ export const cardData = card =>
 
 export const simpleErrorData = errMsg =>
     FakeRSSResponse({
-        response: escape(errMsg),
+        response: esc(errMsg),
         sendResponse: true,
         responseType: 'text',
         status: 'error',
@@ -35,7 +41,7 @@ export const simpleErrorData = errMsg =>
 
 export const errorData = error =>
     FakeRSSResponse({
-        response: escape(
+        response: esc(
             `An internal error occured while running your command:<br><br>Error Details: ${error.message}`
         ),
         sendResponse: true,

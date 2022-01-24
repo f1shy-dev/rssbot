@@ -1,25 +1,24 @@
 import { errorData, ignoreData, simpleErrorData } from '../util/botData'
 import { redditCommand } from './reddit'
 import { helpCommand } from './help'
+import { pingCommand } from './ping'
 
 export const commandHandler = query => {
-    const { m } = query
-
-    if (m === '' || m === undefined)
+    const msg = query.m
+    if (msg === '' || msg === undefined)
         return errorData(new Error(`CommandMissing`))
 
-    if (!m.startsWith('!')) return ignoreData()
+    const cmd = msg.split(' ')[0]
+    if (!cmd.startsWith('!')) return ignoreData()
+    const c = name => cmd == `!${name}`
 
-    switch (m.split(' ')[0]) {
-        case '!reddit':
-            return redditCommand(m)
-        case '!help':
-            return helpCommand(m)    
-        default:
-            return simpleErrorData(
-                `<strong>Error: Command ${
-                    m.split(' ')[0]
-                } not found!</strong><br><br>Run <strong>!help</strong> for a list of commands.`
-            )
-    }
+    if (c('reddit')) return redditCommand(msg)
+    if (c('help')) return helpCommand(msg)
+    if (c('ping')) return pingCommand(msg)
+
+    return simpleErrorData(
+        `The command <b>${
+            m.split(' ')[0]
+        }</b> doesn't exist!<br><br>Run <b>!help</b> for a list of commands.`
+    )
 }

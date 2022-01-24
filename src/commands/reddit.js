@@ -1,6 +1,6 @@
 import { textData } from '../util/botData'
 
-export const redditCommand = m => {
+export const redditCommand = msg => {
     // const [, subreddit, filter, amount] = m.split(' ')
     return textData('Reddit command not implemented yet!')
 }

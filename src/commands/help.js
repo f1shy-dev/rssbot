@@ -1,6 +1,16 @@
 import { textData } from '../util/botData'
 
-export const helpCommand = m => {
-    // const [, subreddit, filter, amount] = m.split(' ')
-    return textData('<p>List of all commands:<br><br><strong>!reddit</strong> - view posts from reddit<br><strong>!help</strong> - shows this help menu</p>')
+export const helpCommand = msg => {
+    const commands = {
+        reddit: 'view posts from reddit',
+        help: 'show this help menu',
+        ping: '🏓 pong!',
+    }
+
+    const text =
+        'List of all commands:<br><br>' +
+        Object.keys(commands)
+            .map(c => `<b>!${c}</b> - ${commands[c]}`)
+            .join('<br>')
+    return textData(text)
 }
