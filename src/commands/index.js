@@ -1,6 +1,7 @@
 import { ping } from './ping'
 import { reddit } from './reddit'
 import { help } from './help'
+import { debug } from './debug'
 
 export default { help, ping, reddit, debug }
 
