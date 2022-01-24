@@ -1,5 +1,7 @@
 import { errorData, ignoreData, simpleErrorData } from '../util/botData'
 import { redditCommand } from './reddit'
+import { helpCommand } from './help'
+
 export const commandHandler = query => {
     const { m } = query
 
@@ -11,11 +13,13 @@ export const commandHandler = query => {
     switch (m.split(' ')[0]) {
         case '!reddit':
             return redditCommand(m)
+        case '!help':
+            return helpCommand(m)    
         default:
             return simpleErrorData(
                 `<strong>Error: Command ${
                     m.split(' ')[0]
-                } not found!</strong><br><br>Valid commands: <strong>!reddit</strong>`
+                } not found!</strong><br><br>Run <strong>!help</strong> for a list of commands.`
             )
     }
 }
