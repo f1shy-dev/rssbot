@@ -6,7 +6,10 @@ export const commandHandler = (query, config) => {
     if (msg === '' || msg === undefined)
         return errorData(new Error(`CommandMissing`))
 
-    const cmdRaw = msg.trim().split(' ')[0]
+    const cmdRaw = msg
+        .trim()
+        .split('\n')[0]
+        .split(' ')[0]
     if (!cmdRaw.startsWith(config.prefix)) return ignoreData()
     const cmd = cmdRaw.substring(config.prefix.length)
 
