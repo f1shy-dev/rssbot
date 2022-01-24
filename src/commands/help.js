@@ -1,16 +1,11 @@
 import { textData } from '../util/botData'
+import { descMap } from '.'
 
-export const helpCommand = msg => {
-    const commands = {
-        reddit: 'view posts from reddit',
-        help: 'show this help menu',
-        ping: '🏓 pong!',
-    }
-
+export const help = (m, a) => {
     const text =
         'List of all commands:<br><br>' +
-        Object.keys(commands)
-            .map(c => `<b>!${c}</b> - ${commands[c]}`)
+        Object.keys(descMap)
+            .map(c => `<b>!${c}</b> - ${descMap[c]}`)
             .join('<br>')
     return textData(text)
 }

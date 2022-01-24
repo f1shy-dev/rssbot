@@ -1,12 +1,12 @@
 import { FakeRSSResponse } from './response'
-// bot will send nothing to user
 
 const esc = s =>
     `<p>${s
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
         .replace(/<b>/g, '<strong>')
-        .replace(/<\/b>/g, '</strong>')}</p>`
+        .replace(/<\/b>/g, '</strong>')
+        .replace(/\n/g, '<br>')}</p>`
 
 export const ignoreData = () =>
     FakeRSSResponse({
