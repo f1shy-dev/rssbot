@@ -1,15 +1,15 @@
-import { ping } from './ping'
-import { reddit } from './reddit'
-import { help } from './help'
+
 import { debug } from './debug'
-import { random } from './random'
+import { math } from './math'
+import { gpt } from './gpt'
+import { help } from './help'
+import { gptusage } from './gptusage'
+export default { debug, math, gpt, help, gptusage }
 
-export default { help, ping, reddit, debug, random }
-
-export const descMap = {
-    help: 'shows this help menu',
-    ping: '🏓 pong!',
-    reddit: 'view posts from reddit',
+export const commandDescriptions = {
     debug: 'shows debug statistics',
-    random: 'generates a random number',
-}
+    math: 'testing for rendering math equations',
+    gpt: 'generate text using i-wonder-what',
+    help: 'shows this help menu',
+    gptusage: 'shows openai account usage',
+};

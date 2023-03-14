@@ -1,6 +1,6 @@
 import { textData } from '../util/botData'
 
-export const random = (m, a, c) => {
+export const random = (m, a, user, c) => {
     const start = parseInt(a[0])
     const end = parseInt(a[1])
 

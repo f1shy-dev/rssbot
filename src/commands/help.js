@@ -1,11 +1,18 @@
-import { textData } from '../util/botData'
-import { descMap } from '.'
+import { commandDescriptions } from ".";
+import { textData } from "../util/botData";
 
-export const help = (m, a) => {
-    const text =
-        'List of all commands:<br><br>' +
-        Object.keys(descMap)
-            .map(c => `<b>!${c}</b> - ${descMap[c]}`)
-            .join('<br>')
-    return textData(text)
+export const help = async ({ msg, args, user, config, msgData, mentionToken, replyMessage }) => {
+    const commands = Object.keys(config.commands)
+    const commandsList = commands.sort()
+        .map((cmd) => {
+            return `<li><b>${config.prefix}${cmd}</b> - ${commandDescriptions[cmd]}</li>`
+        })
+        .join('')
+
+    return textData(
+        `<p><b>All Commands</b></p>
+        <ul>
+            ${commandsList}
+        </ul>`
+    )
 }

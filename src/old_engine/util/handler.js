@@ -2,7 +2,20 @@ import { errorData, ignoreData, simpleErrorData } from './botData'
 import commands from '../commands'
 
 export const commandHandler = (query, config) => {
+    console.log(
+        JSON.parse(decodeURIComponent(
+            atob(query.u || "e30=")
+        ))
+    )
+    console.log(
+        JSON.parse(decodeURIComponent(
+            atob(query.b || "e30=")
+        ))
+    )
     const msg = query.m
+
+    const user = JSON.parse(atob(query.u || "e30=")) || {}
+
     if (msg === '' || msg === undefined)
         return errorData(new Error(`CommandMissing`))
 
@@ -14,7 +27,7 @@ export const commandHandler = (query, config) => {
     const cmd = cmdRaw.substring(config.prefix.length)
 
     if (commands[cmd])
-        return commands[cmd](msg, msg.split(' ').slice(1), {
+        return commands[cmd](msg, msg.split(' ').slice(1), user, {
             ...config,
             commands,
         })

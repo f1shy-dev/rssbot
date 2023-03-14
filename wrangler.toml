@@ -1,6 +1,8 @@
 name = "fakerss"
-type = "webpack"
+# type = "webpack"
+main = "src/index.js"
 
 account_id = "83d29b81e564bb4248accc93bbefcf31"
 workers_dev = true
 compatibility_date = "2022-01-23"
+# node_compat = true
