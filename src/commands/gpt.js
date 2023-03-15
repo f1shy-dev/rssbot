@@ -12,15 +12,20 @@ export const gpt = async ({ msg, args, user, config, replyMessage }) => {
             "content": args.join(' ')
         }
     ];
-    if (replyMsgs.length == 0) {
-        messages.push({
-            "role": "user",
-            "content": "You have some special formatting options. If you want to output any maths or mathematics or math symbols, you should use a LaTeX format, inside 3 curly brackets like this {{{<latex>}}}, for example: you would write x squared or x^2 as: {{{x^2}}}. Please do this for any maths conversations, in place of using normal quotes around letters, even if it is a small term such as x^2."
-        })
-    }
+    // if (replyMsgs.length == 0) {
+    //     messages.push({
+    //         "role": "user",
+    //         "content": "You have some special formatting options. If you want to output any maths or mathematics or math symbols, you should use a LaTeX format, inside 3 curly brackets like this {{{<latex>}}}, for example: you would write x squared or x^2 as: {{{x^2}}}. Please do this for any maths conversations, in place of using normal quotes around letters, even if it is a small term such as x^2."
+    //     })
+    // }
     if (replyMsgs.length > 0 && userId && user.id && userId !== user.id) {
         return textData(`<b>⛔️ Warning</b><br>It looks like you are trying to reply to somebody else's conversation, which is not allowed. If you are trying to start a new conversation, please do not reply to any messages.`)
     }
+    // only new lines or empty strings
+    if (args.length == 0 || args.join(' ').length == 0 || args.join(' ').trim().length == 0) {
+        return textData(`<b>😬 Whoops...</b><br>You have not provided a prompt to generate a response from. Please provide a prompt to generate a response from.`)
+    }
+
 
 
     const res = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -52,7 +57,7 @@ export const gpt = async ({ msg, args, user, config, replyMessage }) => {
         let sendFooter = false
         let footer = `<br><div style="font-size:x-small">`
         if (replyMsgs.length > 0) {
-            footer += `You replied to a message, so you are in a conversation with ${messages.length - 1} messages.`
+            footer += `You replied to a message, so you are in a conversation with ${messages.length} messages.`
             sendFooter = true
         }
 
