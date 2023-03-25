@@ -1,5 +1,6 @@
 import { errorData, ignoreData, simpleErrorData } from './botData'
 import commands from '../commands'
+import minimist from 'minimist'
 
 const handle = async (res, config) => {
     const { msgData, mentionToken, replyMessage } = await res.json()
@@ -8,6 +9,7 @@ const handle = async (res, config) => {
     console.log("body", JSON.stringify(msgData.body, null, 2))
     const user = msgData.from.user
 
+    if (!msgData.from.user || !msgData.from.user.id || msgData.from.user.id === "") return ignoreData()
     if (msg === '') return ignoreData()
 
     if (msg === undefined)
@@ -29,6 +31,7 @@ const handle = async (res, config) => {
         return commands[cmd]({
             msg,
             args: msg.split(' ').slice(1),
+            mArgs: minimist(msg.split(' ').slice(1)),
             user,
             config: {
                 ...config,

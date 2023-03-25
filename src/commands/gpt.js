@@ -1,15 +1,16 @@
 import { textData } from '../util/botData'
 import { renderMath } from '../util/renderMath';
 import { getGPTMessagesFromReply } from '../util/replyParser';
+import Filter from 'bad-words';
 
-export const gpt = async ({ msg, args, user, config, replyMessage }) => {
-    const { replyMsgs, userId } = getGPTMessagesFromReply(replyMessage)
+export const gpt = async ({ msg, args, mArgs, user, config, replyMessage }) => {
+    const { replyMsgs, userId, userName } = getGPTMessagesFromReply(replyMessage)
 
     let messages = [
         ...replyMsgs,
         {
             "role": "user",
-            "content": args.join(' ')
+            "content": mArgs._.join(" ")
         }
     ];
     // if (replyMsgs.length == 0) {
@@ -19,11 +20,18 @@ export const gpt = async ({ msg, args, user, config, replyMessage }) => {
     //     })
     // }
     if (replyMsgs.length > 0 && userId && user.id && userId !== user.id) {
-        return textData(`<b>⛔️ Warning</b><br>It looks like you are trying to reply to somebody else's conversation, which is not allowed. If you are trying to start a new conversation, please do not reply to any messages.`)
+        return textData(`<b>⛔️ Warning</b><br>It looks like you are trying to reply to ${userName ? userName.split(" ")[0] : "somebody else"}'s conversation. If you are trying to start a new conversation, please do not reply to any messages.`)
     }
     // only new lines or empty strings
     if (args.length == 0 || args.join(' ').length == 0 || args.join(' ').trim().length == 0) {
-        return textData(`<b>😬 Whoops...</b><br>You have not provided a prompt to generate a response from. Please provide a prompt to generate a response from.`)
+        return textData(`<b>Text generation command</b><br>Generate text using an AI model. Run <code>/gpt [what you want to generate - a prompt]</code> to generate something.<br><br>
+        <b>Advanced options</b>
+        <ul>
+            <li><code>-t or --temp or --temperature</code>: set the temperature of the model</li>
+            <li><code>-p or --top_p</code>: set the top_p of the model</li>
+            <li><code>-p or --presence_penalty</code>: set the presence_penalty of the model</li>
+            <li><code>-f or --frequency_penalty</code>: set the frequency_penalty of the model</li>
+        </ul>`)
     }
 
 
@@ -37,6 +45,10 @@ export const gpt = async ({ msg, args, user, config, replyMessage }) => {
         body: JSON.stringify({
             "model": "gpt-3.5-turbo",
             "messages": messages,
+            "temperature": mArgs.temperature || mArgs.temp || mArgs.t || 1,
+            "top_p": mArgs.top_p || 1,
+            "presence_penalty": mArgs.presence_penalty || mArgs.presence || 0,
+            "frequency_penalty": mArgs.frequency_penalty || mArgs.frequency || 0,
         }),
     });
 
@@ -73,8 +85,10 @@ export const gpt = async ({ msg, args, user, config, replyMessage }) => {
 
         if (sendFooter) footer += "</div>"
 
+        let filter = new Filter();
+
         //between the text and footer as the <div> acts as new line on ios renderer
-        return textData(`<p itemprop="rssbot-cpt-encoding####${btoa(encodeURIComponent(JSON.stringify({ chat_history: messages, user_id: user.id || "no-id-found" })))}">${await renderMath(text)}</p>${sendFooter ? footer : ''}`);
+        return textData(`<p itemprop="rssbot-cpt-encoding####${btoa(encodeURIComponent(JSON.stringify({ chat_history: messages, user_id: user.id, user_name: user.displayName || "no-id-found" })))}">${await renderMath(filter.clean(text))}</p>${sendFooter ? footer : ''}`);
     } catch (error) {
         if (error.data && error.data.error) {
             if (error.data.error.code && error.data.error.code === "context_length_exceeded") {
