@@ -26,5 +26,7 @@ export const dcard = (m, a) => {
     //         // },
     //     ],
     // })
-    return textData(`<img src="https://math.vercel.app/?bgcolor=auto&from=%5Ctext%7BEdit%20this%7D%5C%20%5CLaTeX.svg" />`)
+    return textData(
+        `<img src="https://math.vercel.app/?bgcolor=auto&from=%5Ctext%7BEdit%20this%7D%5C%20%5CLaTeX.svg" />`
+    )
 }

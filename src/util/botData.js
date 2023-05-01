@@ -4,7 +4,6 @@ export const esc = s => {
     //<p>🚨 warning: v2 handler mode on</p><br>
     let m = s.includes('<') ? s.trim() : `<p>${s.trim()}</p>`
 
-
     // .replace(/</g, '&lt;')
     // .replace(/>/g, '&gt;')
     // .replace(/<b>/g, '<strong>')

@@ -14,7 +14,10 @@ const router = Router()
 // })
 
 // router.post('/bot_http/', async (res) => await commandHandlerNew(res, { prefix: "/" }))
-router.post('/bot_http_fast/', async (res) => await commandHandlerNew(res, { prefix: "/" }))
+router.post(
+    '/bot_http_fast/',
+    async res => await commandHandlerNew(res, { prefix: '/' })
+)
 
 router.all('*', () => new Response('hello world!', { status: 404 }))
 

@@ -6,9 +6,10 @@ export const debug = (m, a, user, conf) => {
             {
                 role: 'system',
                 //test
-                content: 'You are a helpful assistant called ChatGPT, but you have some special formatting options. If you want to output maths, you should use a LaTeX format, inside brackets like this {{{{<latex>}}}} such as x squared which would be {{{{x^2}}}}.',
+                content:
+                    'You are a helpful assistant called ChatGPT, but you have some special formatting options. If you want to output maths, you should use a LaTeX format, inside brackets like this {{{{<latex>}}}} such as x squared which would be {{{{x^2}}}}.',
             },
-        ]
+        ],
     })
     //atob/btoa
     let b64_data = btoa(data)
@@ -22,5 +23,4 @@ export const debug = (m, a, user, conf) => {
         
         <br><b>Plain-text message:</b><br>${m}`
     )
-
 }

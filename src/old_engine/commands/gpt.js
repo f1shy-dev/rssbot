@@ -8,13 +8,13 @@ export const gpt = async (m, a, user, conf) => {
             Authorization: `Bearer ${OPENAI_KEY}`,
         },
         body: JSON.stringify({
-            "model": "gpt-3.5-turbo",
-            "messages": [
+            model: 'gpt-3.5-turbo',
+            messages: [
                 {
-                    "role": "user",
-                    "content": a.join(' ')
-                }
-            ]
+                    role: 'user',
+                    content: a.join(' '),
+                },
+            ],
         }),
     })
         .then(response => {
@@ -33,5 +33,4 @@ export const gpt = async (m, a, user, conf) => {
             console.log(error)
             return textData(error.message)
         })
-
 }

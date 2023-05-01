@@ -6,14 +6,18 @@ const handle = async (res, config) => {
     const { msgData, mentionToken, replyMessage } = await res.json()
     // console.log(JSON.stringify({ msgData, mentionToken, replyMessage }, null, 2))
     const msg = msgData.body.plainTextContent
-    console.log("body", JSON.stringify(msgData.body, null, 2))
+    console.log('body', JSON.stringify(msgData.body, null, 2))
     const user = msgData.from.user
 
-    if (!msgData.from.user || !msgData.from.user.id || msgData.from.user.id === "") return ignoreData()
+    if (
+        !msgData.from.user ||
+        !msgData.from.user.id ||
+        msgData.from.user.id === ''
+    )
+        return ignoreData()
     if (msg === '') return ignoreData()
 
-    if (msg === undefined)
-        return errorData(new Error(`CommandMissing`))
+    if (msg === undefined) return errorData(new Error(`CommandMissing`))
 
     const cmdRaw = msg
         .trim()
@@ -58,10 +62,8 @@ export const commandHandler = async (res, config) => {
         // }
 
         return response
-    }
-    catch (e) {
+    } catch (e) {
         console.log(e)
         return errorData(e)
     }
 }
-

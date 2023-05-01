@@ -7,7 +7,17 @@ import { dcard } from './dcard'
 import { gpt } from './gpt'
 import { gptusage } from './gptusage'
 import { randomcase } from './randomcase'
-export default { help, ping, reddit, debug, random, dcard, gpt, gptusage, randomcase }
+export default {
+    help,
+    ping,
+    reddit,
+    debug,
+    random,
+    dcard,
+    gpt,
+    gptusage,
+    randomcase,
+}
 
 export const descMap = {
     help: 'shows this help menu',

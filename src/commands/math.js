@@ -1,33 +1,84 @@
 import { textData } from '../util/botData'
 import { renderMath } from '../util/renderMath'
+// import { create, all } from 'mathjs/'
+import {
+    create
+} from 'mathjs'
 
-export const math = async ({ msg, args, user, config, msgData, mentionToken, replyMessage }) => {
-    // fetch svg from math.vercel.app
-    // const s = `https://math.vercel.app/?from=${encodeURIComponent(m)}`
-    // const r = await fetch(s)
-    // let source = await r.text()
-    // console.log(source)
+import { all as numberAll } from 'mathjs/number'
+import { unitDependencies } from 'mathjs'
+import { toDependencies } from 'mathjs'
+import { UnitDependencies } from 'mathjs'
 
-    // if (!source.match(/^<svg[^>]+xmlns="http\:\/\/www\.w3\.org\/2000\/svg"/)) {
-    //     source = source.replace(/^<svg/, '<svg xmlns="http://www.w3.org/2000/svg"');
-    // }
-    // if (!source.match(/^<svg[^>]+"http\:\/\/www\.w3\.org\/1999\/xlink"/)) {
-    //     source = source.replace(/^<svg/, '<svg xmlns:xlink="http://www.w3.org/1999/xlink"');
-    // }
+export const math = async ({
+    msg,
+    args,
+    mArgs,
+    user,
+    config,
+    msgData,
+    mentionToken,
+    replyMessage,
+}) => {
+    const mathjs = create()
+    mathjs.import(numberAll)
+    mathjs.import(unitDependencies, { override: true })
+    mathjs.import(toDependencies, { override: true })
+    mathjs.import(UnitDependencies, { override: true })
+    const { simplify, evaluate } = mathjs
 
-    // //add xml declaration
-    // source = '<?xml version="1.0" standalone="no"?>\r\n' + source;
+    // /math --render -a 1 eval <math> (where -a can be any variable, so like -x and it sets it)
+    // /math --render simplify <math>
 
-    // //convert svg source to URI data scheme.
-    // var url = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(source);
+    // <math> can include newlines, and you will do whatever to each line separately
 
-    //fetch image and get height/width
-    // const url = `https://latex.codecogs.com/gif.json?${encodeURIComponent(args.join(" "))}`
-    // const i = await fetch(url)
-    // const data = await i.json()
+    if (args.length == 0) {
+        return textData(
+            `<b>Math command</b><br>Render math equations and do math operations.`
+        )
+    }
 
-    // const imgURL = `https://latex.codecogs.com/png.image?${encodeURIComponent(args.join(" "))}`
-    // let str = `<b>Image Test  </b><span style="background-color: rgb(254,254,254); width: ${data.latex.width + 4}px; height: ${data.latex.height + 4}px; display:inline-block;"><img style="width: ${data.latex.width}px; height: ${data.latex.height}px;" src="${imgURL}" /></span>`
-    // console.log(str)
-    return textData(`<b>Math Rendering Test</b><br>${await renderMath(args.join(" "))}`)
+    const doSlice = mArgs.render && !['eval', 'simplify'].includes(mArgs._[0])
+
+    const mode = doSlice ? mArgs.render : mArgs._[0]
+    const math = mArgs._.slice(doSlice ? 0 : 1).join(' ').split('\n')
+    console.log('math', math)
+
+    if (mode == 'eval') {
+        // const math = mArgs._.slice(doSlice ? 0 : 1).join(' ').split('\n')
+        const vars = {}
+        for (let key in mArgs) {
+            if (key != '_' && key != 'render') {
+                vars[key] = mArgs[key]
+            }
+        }
+
+        let text = '<b>🧮 Math Evaluator</b><br>'
+        let res = []
+        for (let i = 0; i < math.length; i++) {
+            const result = evaluate(math[i], vars)
+            mArgs.render ? res.push(`{{{${result.toTex()}}}}`) : res.push(result.toString())
+        }
+        text += res.join('<br>')
+        console.log('gothere')
+
+        return textData(mArgs.render ? await renderMath(text) : text)
+
+    }
+
+    if (mode == 'simplify') {
+        // const math = [...(doSlice ? mArgs.render : []), ...mArgs._.slice(doSlice ? 0 : 1)].join(' ').split('\n')
+
+        let text = '<b>🧮 Math Simplification</b><br>'
+        let res = []
+        for (let i = 0; i < math.length; i++) {
+            const result = simplify(math[i])
+            mArgs.render ? res.push(`{{{${result.toTex()}}}}`) : res.push(result.toString())
+        }
+        text += res.join('<br>')
+
+        return textData(mArgs.render ? await renderMath(text) : text)
+    }
+
+    return textData(`<b>😬 Whoops...</b><br>Could not find a mode matching your search. <br><br>📝 Run <code>/math eval [math]</code> to evaluate math.<br>📝 Run <code>/math simplify [math]</code> to simplify math.`)
 }

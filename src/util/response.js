@@ -19,7 +19,6 @@
 //     ...param,
 // })
 
-
 export const JSONResponse = (data, param) =>
     new Response(JSON.stringify(data, null, 2), {
         headers: {

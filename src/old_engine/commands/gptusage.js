@@ -17,11 +17,11 @@ export const gptusage = async (m, a, user, conf) => {
         })
         .then(data => {
             console.log(data)
-            let effective = new Date(0);
-            effective.setUTCSeconds(data.grants.data[0].effective_at);
+            let effective = new Date(0)
+            effective.setUTCSeconds(data.grants.data[0].effective_at)
 
-            let expires = new Date(0);
-            expires.setUTCSeconds(data.grants.data[0].expired_at);
+            let expires = new Date(0)
+            expires.setUTCSeconds(data.grants.data[0].expired_at)
             // show amount of dollars used/left and percentae and next line show the date range
             //Account has used $0.00 of $18 (per%), with the credits expiring on date
             // round the amounts to 2dp
@@ -34,8 +34,19 @@ export const gptusage = async (m, a, user, conf) => {
             expires_at.setUTCSeconds(data.grants.data[0].expires_at)
 
             // 1st May 2023
-            expires_at = expires_at.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
-            return textData(`Account has used $${total_used.toFixed(2)} of $${total_granted} (${(total_used / total_granted * 100).toFixed(2)}%), with the credits expiring on ${expires_at}`)
+            expires_at = expires_at.toLocaleDateString('en-GB', {
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric',
+            })
+            return textData(
+                `Account has used $${total_used.toFixed(
+                    2
+                )} of $${total_granted} (${(
+                    (total_used / total_granted) *
+                    100
+                ).toFixed(2)}%), with the credits expiring on ${expires_at}`
+            )
 
             /* example data response
             {
@@ -63,5 +74,4 @@ export const gptusage = async (m, a, user, conf) => {
             console.log(error)
             return textData(error.message)
         })
-
 }

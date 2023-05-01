@@ -1,4 +1,3 @@
-
 import { debug } from './debug'
 import { math } from './math'
 import { gpt } from './gpt'
@@ -14,4 +13,4 @@ export const commandDescriptions = {
     help: 'shows this help menu',
     gptusage: 'shows openai account usage',
     kb: 'get link to any kerboodle book without logging in',
-};
+}
