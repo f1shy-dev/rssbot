@@ -8,3 +8,5 @@ src/data/*
 .dev.vars
 .*.vars
 yarn-error.log
+
+.wrangler/
