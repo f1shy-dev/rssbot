@@ -7,3 +7,9 @@ workers_dev = true
 compatibility_date = "2022-01-23"
 # node_compat = true
 minify = true
+kv_namespaces = [
+    { binding = "MAINKV", id = "7528ae809abc49079646b08d5771486f", preview_id = "8a27ad32578d46f487eb57d77674fbc9" }
+]
+
+[placement]
+mode = "smart"

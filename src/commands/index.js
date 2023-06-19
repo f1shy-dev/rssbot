@@ -2,15 +2,57 @@ import { debug } from './debug'
 import { math } from './math'
 import { gpt } from './gpt'
 import { help } from './help'
-import { gptusage } from './gptusage'
 import { kb } from './kb'
-export default { debug, math, gpt, help, gptusage, kb }
+import { bard } from './bard'
+import { clarity } from './clarity'
 
-export const commandDescriptions = {
-    debug: 'shows debug statistics',
-    math: 'testing for rendering math equations',
-    gpt: 'generate text using i-wonder-what',
-    help: 'shows this help menu',
-    gptusage: 'shows openai account usage',
-    kb: 'get link to any kerboodle book without logging in',
+export const commandMap = {
+    'AI Tools': [
+        {
+            run: gpt,
+            aliases: ['gpt', 'ai', 'got', 'gptee'],
+            description: 'generate text using i-wonder-what',
+        },
+        {
+            run: clarity,
+            aliases: ['clarity', 'sgpt', 'sai'],
+            description:
+                'generate text using i-wonder-what and the power of the internet',
+            userids: [
+                '1e2b0ed7-dd66-4474-bfb2-5cb694e64343',
+                '3e3f009d-4caa-4994-abda-fe1cdf02824d',
+            ],
+        },
+        {
+            run: bard,
+            aliases: ['bard'],
+            description: 'bard',
+            userids: [
+                '1e2b0ed7-dd66-4474-bfb2-5cb694e64343',
+                '3e3f009d-4caa-4994-abda-fe1cdf02824d',
+            ],
+        },
+    ],
+    Utilities: [
+        {
+            run: help,
+            aliases: ['help', 'h'],
+            description: 'shows this help menu',
+        },
+        {
+            run: kb,
+            aliases: ['kb', 'kerboodle'],
+            description: 'get link to any kerboodle book without logging in',
+        },
+        {
+            run: math,
+            aliases: ['math', 'rendermath'],
+            description: 'testing for rendering math equations',
+        },
+        {
+            run: debug,
+            aliases: ['debug'],
+            description: 'shows debug statistics',
+        },
+    ],
 }

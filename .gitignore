@@ -5,3 +5,6 @@ package-lock.json
 dist/
 src/data/*
 !src/data/*.sample
+.dev.vars
+.*.vars
+yarn-error.log

@@ -6,7 +6,8 @@
     "main": "src/index.js",
     "scripts": {
         "test": "echo \"Error: no test specified\" && exit 1",
-        "format": "prettier --write '**/*.{js,css,json,md}' --ignore-path .gitignore"
+        "format": "prettier --write '**/*.{js,css,json,md}' --ignore-path .gitignore",
+        "dev": "wrangler dev"
     },
     "author": "f1shy-dev <agarwal.vrishank@gmail.com>",
     "license": "ISC",
@@ -14,12 +15,14 @@
         "prettier": "^1.17.0"
     },
     "dependencies": {
+        "@parse5/tools": "^0.1.0",
         "bad-words": "^3.0.4",
         "fuse.js": "^6.6.2",
-        "itty-router": "^2.1.9",
+        "itty-router": "^4.0.9",
         "mathjs": "^11.7.0",
         "minimist": "^1.2.8",
         "parse5": "^7.1.2",
-        "serverless-cloudflare-workers": "^1.2.0"
+        "serverless-cloudflare-workers": "^1.2.0",
+        "wrangler": "^3.1.0"
     }
 }
