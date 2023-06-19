@@ -64,18 +64,19 @@ export const clarity = async ({
         },
         {
             role: 'user',
-            content: `Provide a 2-3 sentence answer to the query based on the following sources. Be original, concise, accurate, and helpful. Cite sources as [1] or [2] or [3] after each sentence (not just the very end) to back up your answer (Ex: Correct: [1], Correct: [2][3], Incorrect: [1, 2]).
+            content: `Provide an answer to the query based on the following sources. Be original, concise (unless told otherwise), accurate, and helpful. Cite sources as [1] or [2] or [3] after each sentence (not just the very end) to back up your answer if needed (Ex: Correct: [1], Correct: [2][3], Incorrect: [1, 2]). You don't have to cite sources if the query doesn't call for it, such as a simple request or if the sources aren't of any relevance.
 
             Query: ${mArgs._.join(' ')}
-      
-      ${sources
-          .map((source, idx) =>
-              source.full || source.brief
-                  ? `Source [${idx + 1}]:\n${source.full || source.brief}`
-                  : false
-          )
-          .filter(Boolean)
-          .join('\n\n')}`.slice(0, 4095),
+            
+
+            ${sources
+                .map((source, idx) =>
+                    source.full || source.brief
+                        ? `Source [${idx + 1}]:\n${source.full || source.brief}`
+                        : false
+                )
+                .filter(Boolean)
+                .join('\n\n')}`.slice(0, 3500), //headroom for the rest of the message+response
         },
     ]
     if (
