@@ -11,16 +11,15 @@ export const commandMap = {
         {
             run: gpt,
             aliases: ['gpt', 'ai', 'got', 'gptee'],
-            description: 'generate text using i-wonder-what',
+            description: 'generate text using :)',
         },
         {
             run: clarity,
             aliases: ['clarity', 'sgpt', 'sai'],
-            description:
-                'generate text using i-wonder-what and the power of the internet',
+            description: 'generate text using :) and the power of the internet',
             userids: [
-                '1e2b0ed7-dd66-4474-bfb2-5cb694e64343',
-                '3e3f009d-4caa-4994-abda-fe1cdf02824d',
+                // '1e2b0ed7-dd66-4474-bfb2-5cb694e64343',
+                // '3e3f009d-4caa-4994-abda-fe1cdf02824d',
             ],
         },
         {

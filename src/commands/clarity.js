@@ -36,6 +36,7 @@ export const clarity = async ({
                 'instagram',
                 'youtube',
                 'tiktok',
+                'twitter',
             ].every(b => !s.url.includes(b))
     )
 
@@ -64,7 +65,8 @@ export const clarity = async ({
         },
         {
             role: 'user',
-            content: `Provide an answer to the query based on the following sources. Be original, concise (unless told otherwise), accurate, and helpful. Cite sources as [1] or [2] or [3] after each sentence (not just the very end) to back up your answer if needed (Ex: Correct: [1], Correct: [2][3], Incorrect: [1, 2]). You don't have to cite sources if the query doesn't call for it, such as a simple request or if the sources aren't of any relevance.
+            content: `Provide an answer to the query based on the following sources. Be original, concise (unless told otherwise), accurate, and helpful. Cite sources as [1] or [2] or [3] after each sentence (not just the very end) to back up your answer if needed (Ex: Correct: [1], Correct: [2][3], Incorrect: [1, 2]). You don't have to cite sources if the query doesn't call for it, such as a simple request or if the sources aren't of any relevance (ignore any sources that seem to have not been scraped correctly, such as those with messages about confirming that you're not a robot). If the query was about a certain website and all sources provided weren't useful then respond generally but make sure to acknowledge that your answer may not be accurate.
+
 
             Query: ${mArgs._.join(' ')}
             
@@ -76,7 +78,7 @@ export const clarity = async ({
                         : false
                 )
                 .filter(Boolean)
-                .join('\n\n')}`.slice(0, 3500), //headroom for the rest of the message+response
+                .join('\n\n')}`.slice(0, 16384 - 1000),
         },
     ]
     if (
@@ -84,7 +86,7 @@ export const clarity = async ({
         args.join(' ').length == 0 ||
         args.join(' ').trim().length == 0
     ) {
-        return textData(`<b>Search powered text generation command</b><br>Generate text using an AI model. Searches the web for info Run <code>/gpt [what you want to generate - a prompt]</code> to generate something.<br><br>
+        return textData(`<b>Search powered text generation command</b><br>Generate text using an AI model. Searches the web for info Run <code>/clarity [what you want to generate - a prompt]</code> to generate something.<br><br>
         <b>Advanced options</b>
         <ul>
             <li><code>-t or --temp or --temperature</code>: set the temperature of the model</li>
@@ -101,9 +103,9 @@ export const clarity = async ({
             Authorization: `Bearer ${OPENAI_KEY}`,
         },
         body: JSON.stringify({
-            model: 'gpt-3.5-turbo',
+            model: 'gpt-3.5-turbo-16k',
             messages: messages,
-            temperature: mArgs.temperature || mArgs.temp || mArgs.t || 1,
+            temperature: mArgs.temperature || mArgs.temp || mArgs.t || 0.65,
             top_p: mArgs.top_p || 1,
             presence_penalty: mArgs.presence_penalty || mArgs.presence || 0,
             frequency_penalty: mArgs.frequency_penalty || mArgs.frequency || 0,
@@ -141,7 +143,7 @@ export const clarity = async ({
         //     sendFooter = true
         // }
 
-        if (data.usage.total_tokens > 4095) {
+        if (data.usage.total_tokens > 16383) {
             footer += ` <b>🚨 Error: In this request, you havegone over the 4096 token limit</b>, and you may have been cut off. You may want to shorten your prompt.`
             sendFooter = true
         }
@@ -161,7 +163,7 @@ export const clarity = async ({
                 error.data.error.code === 'context_length_exceeded'
             ) {
                 return textData(
-                    `<b>⛔️ Error</b><br>You have gone over the 4096 token limit. ${
+                    `<b>⛔️ Error</b><br>You have gone over the 16k token limit. ${
                         replyMsgs.length > 0
                             ? 'You may want to try again without replying to a message.'
                             : 'You may want to shorten your prompt.'

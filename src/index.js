@@ -4,6 +4,7 @@ import { commandHandler as commandHandlerNew } from './util/handler_v2.js'
 const router = Router()
 import { getSourcesFromDDG, getTextFromURL } from './util/sourceParser.js'
 import { stringify } from './util/json_util.js'
+import { browserHeaders } from './util/browserHeaders.js'
 
 // const config = {
 //     prefix: '!',
@@ -16,11 +17,44 @@ import { stringify } from './util/json_util.js'
 // })
 
 // router.post('/bot_http/', async (res) => await commandHandlerNew(res, { prefix: "/" }))
+
 router
     .post(
         '/bot_http_fast/',
         async (res, evt) => await commandHandlerNew(res, evt, { prefix: '/' })
     )
+    .get('/res_info', async (res, evt) => {
+        return new Response(
+            stringify({
+                headers: Object.fromEntries(res.headers.entries()),
+                url: res.url,
+                host: res.url.match(/https?:\/\/([^\/]+)/)[1],
+                method: res.method,
+                body: await res.text(),
+            })
+        )
+    })
+
+    .get('/proxy', async (res, evt) => {
+        const url = new URL(res.url).searchParams.get('url')
+        if (!url)
+            return new Response(
+                stringify({ status: 400, body: 'No url provided!' })
+            )
+
+        const full = await getTextFromURL(url)
+        if (!full)
+            return new Response(
+                stringify({ status: 400, body: 'Error getting source!' })
+            )
+
+        return new Response(full, {
+            headers: {
+                'content-type': 'text/html; charset=UTF-8',
+                cache: 'no-cache',
+            },
+        })
+    })
 
     .get('/google_proxy', async (res, evt) => {
         const query = new URL(res.url).searchParams.get('q')

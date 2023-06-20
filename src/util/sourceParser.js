@@ -1,5 +1,6 @@
 import { parse } from 'parse5'
 import { queryAll, query, hasAttribute, getAttribute } from '@parse5/tools'
+import { browserHeaders, cookieJar } from './browserHeaders'
 
 function getNodeTextContent(node, filter) {
     if (!node) return ''
@@ -36,15 +37,89 @@ export const hasClassOrID = (node, classes) => {
 const hcid = c => node => hasClassOrID(node, c)
 
 export const getTextFromURL = async url => {
-    console.log(`[source getText] ${url}`)
-    const response = await fetch(url, {
-        headers: {
-            'User-Agent':
-                'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36',
-        },
-    })
-    if (!response.ok) return null
-    const htmlString = await response.text()
+    let resolved = false
+    let tries = 0
+    let response = null
+    let htmlString = null
+    // redirect manually so we can set cookies to make sure some sites dont infinite redirect
+    while (!resolved && tries < 8) {
+        const parsedURL = new URL(url)
+        tries++
+        response = await fetch(url, {
+            headers: browserHeaders(url),
+            redirect: 'manual',
+        })
+        console.log(`[source getText] ${url} - ${response.status}`)
+
+        if (
+            !response ||
+            (!response.ok && !(response.status >= 300 && response.status < 400))
+        ) {
+            console.log(`[source getText] ${url} failed - ${response.status}`)
+            resolved = true
+            response = null
+            return null
+        }
+        if (response.headers.get('set-cookie')) {
+            const cookies = response.headers
+                .get('set-cookie')
+                .split(',')
+                .map(c => c.split(';')[0])
+            cookies.forEach(c => (cookieJar[c.split('=')[0]] = c.split('=')[1]))
+        }
+
+        if (response.status >= 300 && response.status < 400) {
+            url = response.headers.get('location')
+            console.log(`[source getText] redirecting to ${url}`)
+            if (!url.startsWith('http')) {
+                if (url.startsWith('//')) url = parsedURL.protocol + url
+                else if (url.startsWith('/')) url = parsedURL.origin + url
+                else url = parsedURL.origin + '/' + url
+            }
+            continue
+        }
+        // check meta refresh
+        const str = await response.text()
+        htmlString = str
+        const doc = parse(str)
+        const meta = query(doc, node => {
+            if (node.tagName && node.tagName === 'meta') {
+                const equiv = node.attrs.find(
+                    attr => attr.name === 'http-equiv'
+                )
+                if (equiv && equiv.value === 'refresh') return true
+            }
+            return false
+        })
+        if (!meta) {
+            resolved = true
+            continue
+        }
+        const content = getAttribute(meta, 'content')
+        if (!content) {
+            resolved = true
+            continue
+        }
+        const match = content.match(/url=(.*)$/)
+        if (match) url = match[1]
+
+        // if (!url) continue
+        console.log(`[source getText] redirecting to ${url}`)
+        if (!url.startsWith('http')) {
+            if (url.startsWith('//')) url = parsedURL.protocol + url
+            else if (url.startsWith('/')) url = parsedURL.origin + url
+            else url = parsedURL.origin + '/' + url
+        }
+
+        if (!url) {
+            resolved = true
+            response = null
+            return null
+        }
+    }
+
+    if (!response || !response.ok) return null
+    console.log(`[source getText html] ${url} - ${response.status}`, htmlString)
     const document = parse(htmlString)
     const root =
         query(document, node => {
@@ -94,12 +169,7 @@ export const getTextFromURL = async url => {
 export const getSourcesFromDDG = async query => {
     console.log(`[source search] ${query}`)
     const gres = await fetch('https://duckduckgo.com/html/?q=' + query, {
-        headers: {
-            'User-Agent':
-                //latest chrome
-                'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36',
-            Cookie: 'mkt=en-US; mkt1=en-US',
-        },
+        headers: browserHeaders('https://duckduckgo.com/html/?q=' + query),
     })
     if (!gres.ok) return null
 
