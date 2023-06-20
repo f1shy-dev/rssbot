@@ -19,7 +19,7 @@ export const gpt = async ({ msg, args, mArgs, user, config, replyMessage }) => {
         messages.push({
             role: 'system',
             // "content": "You have some special formatting options. If you want to output any maths or mathematics or math symbols, you should use a LaTeX format, inside 3 curly brackets like this {{{<latex>}}}, for example: you would write x squared or x^2 as: {{{x^2}}}. Please do this for any maths conversations, in place of using normal quotes around letters, even if it is a small term such as x^2."
-            content: `You have some special formatting options - you can use HTML lists/indented lists, and you can have bold text with <strong>bold</strong> and italics with <i>italics</i>. You can also define large titles using <span style="font-size:x-large;">title text</span> or you can also use px values in place of x-large. Please use the relevant formatting when you are writing your responses. The current date and time is ${new Date().toLocaleString()}.`,
+            content: `You are a helpful assistant that accurately answers the user's queries. You have some special formatting options - you can use HTML lists/indented lists, and you can have bold text with <strong>bold</strong> and italics with <i>italics</i>. You can also define large titles using <span style="font-size:x-large;">title text</span> or you can also use px values in place of x-large. Please use the relevant formatting when you are writing your responses. The current date and time is ${new Date().toLocaleString()}.`,
         })
     }
     if (replyMsgs.length > 0 && userId && user.id && userId !== user.id) {
