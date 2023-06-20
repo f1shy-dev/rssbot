@@ -3,6 +3,7 @@ import { renderMath } from '../util/renderMath'
 import { getGPTMessagesFromReply } from '../util/replyParser'
 import Filter from 'bad-words'
 import { getSourcesFromDDG, getTextFromURL } from '../util/sourceParser'
+import { commandMap } from '.'
 
 export const clarity = async ({
     msg,
@@ -12,6 +13,15 @@ export const clarity = async ({
     config,
     replyMessage,
 }) => {
+    const can16kusers = [
+        '1e2b0ed7-dd66-4474-bfb2-5cb694e64343',
+        '3e3f009d-4caa-4994-abda-fe1cdf02824d',
+    ]
+    const use16k =
+        mArgs['16k'] || mArgs['16'] || mArgs['large'] || mArgs['bigtokenlimit']
+
+    const tokenLimit = can16kusers.includes(user.id) && use16k ? 16384 : 4096
+
     // limit query length to 500 characters
     if (mArgs._.join(' ').length > 500)
         return textData(
@@ -19,7 +29,9 @@ export const clarity = async ({
             <p>Query too long. Please keep it under 500 characters.</p>`
         )
 
-    let sources = await getSourcesFromDDG(mArgs._.join(' '))
+    let sources = await getSourcesFromDDG(
+        [use16k || [], mArgs._].flat().join(' ')
+    )
     if (!sources)
         return textData(
             `<p><b>Error</b></p>
@@ -48,15 +60,25 @@ export const clarity = async ({
     )
 
     const promises = unblocked.slice(0, 2).map(async s => {
-        const full = await getTextFromURL(s.url)
+        // const full = await getTextFromURL(s.url)
+        const full = await Promise.race([
+            getTextFromURL(s.url),
+            new Promise((r, _) => setTimeout(() => r(null), 800)),
+        ])
         if (!full) return s
         return { ...s, full }
     })
 
     sources = [
         ...(await Promise.all(promises)),
-        ...(sources.filter(s => !unblocked.includes(s)).slice(0, 2) || []),
+        ...(sources.filter(s => !unblocked.includes(s)).slice(0, 4) || []),
     ]
+
+    const max = tokenLimit - (tokenLimit < 4097 ? 684 : 1600)
+    let sliceLen =
+        sources.map(i => i.full || i.brief).join('').length > max
+            ? max / sources.length
+            : max
 
     let messages = [
         {
@@ -74,11 +96,13 @@ export const clarity = async ({
             ${sources
                 .map((source, idx) =>
                     source.full || source.brief
-                        ? `Source [${idx + 1}]:\n${source.full || source.brief}`
+                        ? `Source [${idx + 1}]:\n${(
+                              source.full || source.brief
+                          ).slice(0, sliceLen)}`
                         : false
                 )
                 .filter(Boolean)
-                .join('\n\n')}`.slice(0, 16384 - 1000),
+                .join('\n\n')}`.slice(0, max),
         },
     ]
     if (
@@ -92,9 +116,22 @@ export const clarity = async ({
             <li><code>-t or --temp or --temperature</code>: set the temperature of the model</li>
             <li><code>-p or --top_p</code>: set the top_p of the model</li>
             <li><code>-p or --presence_penalty</code>: set the presence_penalty of the model</li>
-            <li><code>-f or --frequency_penalty</code>: set the frequency_penalty of the model</li>
+            <li><code>-f or --frequency_penalty</code>: set the frequency_penalty of the model</li>${
+                can16kusers.includes(user.id)
+                    ? `<li><code>--16k or --16 or --large or --bigtokenlimit</code>: use the 16k model instead of the 4k model (expensive!!)</li>`
+                    : ''
+            }
         </ul>`)
     }
+    const temperature = mArgs.temperature || mArgs.temp || mArgs.t || 0.65
+    const top_p = mArgs.top_p || 1
+    const presence_penalty = mArgs.presence_penalty || mArgs.presence || 0
+    const frequency_penalty = mArgs.frequency_penalty || mArgs.frequency || 0
+    console.log(
+        `[clarity openai] ${
+            messages.map(i => i.content).join(' ').length
+        } chars - t${temperature} p${top_p} pp${presence_penalty} fp${frequency_penalty} tl${tokenLimit}`
+    )
 
     const res = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
@@ -103,12 +140,12 @@ export const clarity = async ({
             Authorization: `Bearer ${OPENAI_KEY}`,
         },
         body: JSON.stringify({
-            model: 'gpt-3.5-turbo-16k',
+            model: tokenLimit < 4097 ? 'gpt-3.5-turbo' : 'gpt-3.5-turbo-16k',
             messages: messages,
-            temperature: mArgs.temperature || mArgs.temp || mArgs.t || 0.65,
-            top_p: mArgs.top_p || 1,
-            presence_penalty: mArgs.presence_penalty || mArgs.presence || 0,
-            frequency_penalty: mArgs.frequency_penalty || mArgs.frequency || 0,
+            temperature,
+            top_p,
+            presence_penalty,
+            frequency_penalty,
         }),
     })
 
@@ -119,7 +156,7 @@ export const clarity = async ({
             err.data = data
             throw err
         }
-        const text = data.choices[0].message.content.trim()
+        let text = data.choices[0].message.content.trim()
 
         // replace [1] with <a href="url">[1]</a>
 
@@ -128,7 +165,10 @@ export const clarity = async ({
             matches.forEach(m => {
                 const idx = parseInt(m.slice(1, -1)) - 1
                 if (sources[idx] && sources[idx].url)
-                    text.replace(m, `<a href="${sources[idx].url}">${m}</a>`)
+                    text = text.replace(
+                        new RegExp(`\\[${idx + 1}\\]`, 'g'),
+                        `<a href="${sources[idx].url}">${m}</a>`
+                    )
             })
         }
 
@@ -143,18 +183,24 @@ export const clarity = async ({
         //     sendFooter = true
         // }
 
-        if (data.usage.total_tokens > 16383) {
-            footer += ` <b>🚨 Error: In this request, you havegone over the 4096 token limit</b>, and you may have been cut off. You may want to shorten your prompt.`
+        if (tokenLimit > 4096) {
+            footer += ` 😇 Using 16k mode - ${tokenLimit} token limit.`
+            sendFooter = true
+        }
+
+        if (data.usage.total_tokens > tokenLimit - 1) {
+            footer += ` <b>🚨 Error: In this request, you havegone over the ${tokenLimit} token limit</b>, and you may have been cut off. You may want to shorten your prompt.`
             sendFooter = true
         }
 
         if (sendFooter) footer += '</div>'
 
-        let filter = new Filter()
+        // let filter = new Filter()
 
         //between the text and footer as the <div> acts as new line on ios renderer
         return textData(
-            `<p>${filter.clean(text)}</p>${sendFooter ? footer : ''}`
+            // `<p>${filter.clean(text)}</p>${sendFooter ? footer : ''}`
+            `<p>${text}</p>${sendFooter ? footer : ''}`
         )
     } catch (error) {
         if (error.data && error.data.error) {
@@ -163,7 +209,7 @@ export const clarity = async ({
                 error.data.error.code === 'context_length_exceeded'
             ) {
                 return textData(
-                    `<b>⛔️ Error</b><br>You have gone over the 16k token limit. ${
+                    `<b>⛔️ Error</b><br>You have gone over the ${tokenLimit} token limit. ${
                         replyMsgs.length > 0
                             ? 'You may want to try again without replying to a message.'
                             : 'You may want to shorten your prompt.'
@@ -174,6 +220,6 @@ export const clarity = async ({
                 throw new Error(error.data.error.message)
             }
         }
-        throw new Error(error.message)
+        throw error
     }
 }

@@ -17,14 +17,15 @@ export const gpt = async ({ msg, args, mArgs, user, config, replyMessage }) => {
     ]
     if (replyMsgs.length == 0) {
         messages.push({
-            "role": "user",
+            role: 'user',
             // "content": "You have some special formatting options. If you want to output any maths or mathematics or math symbols, you should use a LaTeX format, inside 3 curly brackets like this {{{<latex>}}}, for example: you would write x squared or x^2 as: {{{x^2}}}. Please do this for any maths conversations, in place of using normal quotes around letters, even if it is a small term such as x^2."
-            "content": `You have some special formatting options - you can use HTML lists/indented lists, and you can have bold text with <strong>bold</strong> and italics with <i>italics</i>. You can also define large titles using <span style="font-size:x-large;">title text</span> or you can also use px values in place of x-large. Please use the relevant formatting when you are writing your responses.`
+            content: `You have some special formatting options - you can use HTML lists/indented lists, and you can have bold text with <strong>bold</strong> and italics with <i>italics</i>. You can also define large titles using <span style="font-size:x-large;">title text</span> or you can also use px values in place of x-large. Please use the relevant formatting when you are writing your responses.`,
         })
     }
     if (replyMsgs.length > 0 && userId && user.id && userId !== user.id) {
         return textData(
-            `<b>⛔️ Warning</b><br>It looks like you are trying to reply to ${userName ? userName.split(' ')[0] : 'somebody else'
+            `<b>⛔️ Warning</b><br>It looks like you are trying to reply to ${
+                userName ? userName.split(' ')[0] : 'somebody else'
             }'s conversation. If you are trying to start a new conversation, please do not reply to any messages.`
         )
     }
@@ -44,6 +45,16 @@ export const gpt = async ({ msg, args, mArgs, user, config, replyMessage }) => {
         </ul>`)
     }
 
+    const temperature = mArgs.temperature || mArgs.temp || mArgs.t || 0.65
+    const top_p = mArgs.top_p || 1
+    const presence_penalty = mArgs.presence_penalty || mArgs.presence || 0
+    const frequency_penalty = mArgs.frequency_penalty || mArgs.frequency || 0
+    console.log(
+        `[gpt openai] ${
+            messages.map(i => i.content).join(' ').length
+        } chars - t${temperature} p${top_p} pp${presence_penalty} fp${frequency_penalty} tl4096`
+    )
+
     const res = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -52,11 +63,11 @@ export const gpt = async ({ msg, args, mArgs, user, config, replyMessage }) => {
         },
         body: JSON.stringify({
             model: 'gpt-3.5-turbo',
-            messages: messages,
-            temperature: mArgs.temperature || mArgs.temp || mArgs.t || 1,
-            top_p: mArgs.top_p || 1,
-            presence_penalty: mArgs.presence_penalty || mArgs.presence || 0,
-            frequency_penalty: mArgs.frequency_penalty || mArgs.frequency || 0,
+            messages,
+            temperature,
+            top_p,
+            presence_penalty,
+            frequency_penalty,
         }),
     })
 
@@ -82,17 +93,20 @@ export const gpt = async ({ msg, args, mArgs, user, config, replyMessage }) => {
         }
 
         if (data.usage.total_tokens > 2400 && data.usage.total_tokens < 4096) {
-            footer += ` 🟠 Warning: ${replyMsgs.length > 0 ? 'You have ' : 'In this request, you '
-                }used ${data.usage.total_tokens} tokens of the 4096 token limit.`
+            footer += ` 🟠 Warning: ${
+                replyMsgs.length > 0 ? 'You have ' : 'In this request, you '
+            }used ${data.usage.total_tokens} tokens of the 4096 token limit.`
             sendFooter = true
         }
 
         if (data.usage.total_tokens > 4095) {
-            footer += ` <b>🚨 Error: ${replyMsgs.length > 0 ? 'You have ' : 'In this request, you '
-                }gone over the 4096 token limit</b>, and you may have been cut off.${replyMsgs.length > 0
+            footer += ` <b>🚨 Error: ${
+                replyMsgs.length > 0 ? 'You have ' : 'In this request, you '
+            }gone over the 4096 token limit</b>, and you may have been cut off.${
+                replyMsgs.length > 0
                     ? ' You may want to try again without replying to a message.'
                     : 'You may want to shorten your prompt.'
-                }`
+            }`
             sendFooter = true
         }
 
@@ -110,7 +124,8 @@ export const gpt = async ({ msg, args, mArgs, user, config, replyMessage }) => {
                         user_name: user.displayName || 'no-id-found',
                     })
                 )
-            )}">${await renderMath(filter.clean(text))}</p>${sendFooter ? footer : ''
+            )}">${await renderMath(filter.clean(text))}</p>${
+                sendFooter ? footer : ''
             }`
         )
     } catch (error) {
@@ -120,9 +135,10 @@ export const gpt = async ({ msg, args, mArgs, user, config, replyMessage }) => {
                 error.data.error.code === 'context_length_exceeded'
             ) {
                 return textData(
-                    `<b>⛔️ Error</b><br>You have gone over the 4096 token limit. ${replyMsgs.length > 0
-                        ? 'You may want to try again without replying to a message.'
-                        : 'You may want to shorten your prompt.'
+                    `<b>⛔️ Error</b><br>You have gone over the 4096 token limit. ${
+                        replyMsgs.length > 0
+                            ? 'You may want to try again without replying to a message.'
+                            : 'You may want to shorten your prompt.'
                     }`
                 )
             }

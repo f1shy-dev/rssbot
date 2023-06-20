@@ -70,7 +70,7 @@ export const getTextFromURL = async url => {
 
         if (response.status >= 300 && response.status < 400) {
             url = response.headers.get('location')
-            console.log(`[source getText] redirecting to ${url}`)
+            console.log(`[source getText] 302 redirecting to ${url}`)
             if (!url.startsWith('http')) {
                 if (url.startsWith('//')) url = parsedURL.protocol + url
                 else if (url.startsWith('/')) url = parsedURL.origin + url
@@ -104,7 +104,7 @@ export const getTextFromURL = async url => {
         if (match) url = match[1]
 
         // if (!url) continue
-        console.log(`[source getText] redirecting to ${url}`)
+        console.log(`[source getText] meta-refresh redirecting to ${url}`)
         if (!url.startsWith('http')) {
             if (url.startsWith('//')) url = parsedURL.protocol + url
             else if (url.startsWith('/')) url = parsedURL.origin + url
@@ -119,7 +119,7 @@ export const getTextFromURL = async url => {
     }
 
     if (!response || !response.ok) return null
-    console.log(`[source getText html] ${url} - ${response.status}`, htmlString)
+    // console.log(`[source getText html] ${url} - ${response.status}`, htmlString)
     const document = parse(htmlString)
     const root =
         query(document, node => {
@@ -154,8 +154,32 @@ export const getTextFromURL = async url => {
             'header',
             'video',
             'audio',
+            'svg',
+            'img',
+            'picture',
+            'canvas',
+            'map',
+            'object',
+            'embed',
+            'param',
+            'source',
+            'track',
+            'math',
+            'button',
+            'input',
+            'textarea',
         ]
         if (node.tagName && deny.includes(node.tagName)) return false
+        // check id and class
+        if (
+            node.attrs &&
+            node.attrs.find(
+                attr =>
+                    (attr.name === 'id' || attr.name === 'class') &&
+                    deny.includes(attr.value)
+            )
+        )
+            return false
         if (
             node.attrs &&
             (hasAttribute(node, 'hidden') || hasAttribute(node, 'aria-hidden'))
