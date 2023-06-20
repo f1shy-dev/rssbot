@@ -83,7 +83,7 @@ export const clarity = async ({
     let messages = [
         {
             role: 'system',
-            content: `You are a helpful assistant that accurately answers the user's queries based on the given text. You have some special formatting options - you can use HTML lists/indented lists, and you can have bold text with <strong>bold</strong> and italics with <i>italics</i>. You can also define large titles using <span style="font-size:x-large;">title text</span> or you can also use px values in place of x-large. Please use the relevant formatting when you are writing your responses.`,
+            content: `You are a helpful assistant that accurately answers the user's queries based on the given text. You have some special formatting options - you can use HTML lists/indented lists, and you can have bold text with <strong>bold</strong> and italics with <i>italics</i>. You can also define large titles using <span style="font-size:x-large;">title text</span> or you can also use px values in place of x-large. Please use the relevant formatting when you are writing your responses. The current date and time is ${new Date().toLocaleString()}.`,
         },
         {
             role: 'user',
