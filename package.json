@@ -17,6 +17,7 @@
     "dependencies": {
         "@parse5/tools": "^0.1.0",
         "bad-words": "^3.0.4",
+        "dayjs": "^1.11.8",
         "fuse.js": "^6.6.2",
         "itty-router": "^4.0.9",
         "mathjs": "^11.7.0",

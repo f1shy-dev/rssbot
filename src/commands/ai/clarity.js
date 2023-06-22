@@ -1,9 +1,5 @@
-import { textData } from '../util/botData'
-import { renderMath } from '../util/renderMath'
-import { getGPTMessagesFromReply } from '../util/replyParser'
-import Filter from 'bad-words'
-import { getSourcesFromDDG, getTextFromURL } from '../util/sourceParser'
-import { commandMap } from '.'
+import { textData } from '../../util/botData'
+import { getSourcesFromDDG, getTextFromURL } from '../../util/sourceParser'
 
 export const clarity = async ({
     msg,

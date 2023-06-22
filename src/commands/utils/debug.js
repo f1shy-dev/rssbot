@@ -1,8 +1,9 @@
-import { textData } from '../util/botData'
-import { renderMath } from '../util/renderMath'
-import { getGPTMessagesFromReply } from '../util/replyParser'
-import linkDB from '../data/kerboodle_more.json'
+import { cardData, textData } from '../../util/botData'
+import { renderMath } from '../../util/renderMath'
+import { getGPTMessagesFromReply } from '../../util/replyParser'
+import linkDB from '../../data/kerboodle_more.json'
 import Fuse from 'fuse.js'
+import { baseCard } from '../../old_engine/util/adaptivecard'
 
 export const debug = async ({
     msg,
@@ -23,6 +24,22 @@ export const debug = async ({
         // [mode]: () => [title, list (bool), html data]
         // 'commands': () => ["Commands", false, `<b></b> commands loaded`],
         prefix: () => ['Bot Prefix', false, config.prefix],
+        video_card: () => [
+            'Video Card',
+            'card',
+            [
+                {
+                    type: 'Media',
+                    sources: [
+                        {
+                            mimeType: 'video/mp4',
+                            url:
+                                'https://cdn.plyr.io/static/demo/View_From_A_Blue_Moon_Trailer-720p.mp4',
+                        },
+                    ],
+                },
+            ],
+        ],
         msg: () => [
             'Message Data',
             true,
@@ -164,7 +181,8 @@ export const debug = async ({
         },
     }
 
-    if (!Object.keys(modeFunctions).includes(mode)) mode = 'help'
+    if (!Object.keys(modeFunctions).includes(mode) || mArgs.h || mArgs.help)
+        mode = 'help'
     if (mode == 'help')
         return textData(
             `<p><b>Debug command help</b></p ><p>Usage: <code>${
@@ -177,6 +195,12 @@ export const debug = async ({
         )
 
     const mf = await modeFunctions[mode]()
+    if (mf[1] === 'card' && typeof mf[2] == 'object')
+        return cardData({
+            ...baseCard(),
+            body: mf[2],
+        })
+
     return textData(
         `${header(mf[0], mf[1])}${mf[2].toString()}${mf[1] ? `</ul>` : ''}`
     )

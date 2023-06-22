@@ -1,5 +1,5 @@
-import { textData } from '../util/botData'
-import { renderMath } from '../util/renderMath'
+import { textData } from '../../util/botData'
+import { renderMath } from '../../util/renderMath'
 
 const errTemplate = code =>
     `<b>⛔️ Error</b><br>Error connecting to Bard. Please try again later. (ERR_${code})`

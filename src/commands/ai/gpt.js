@@ -1,6 +1,6 @@
-import { textData } from '../util/botData'
-import { renderMath } from '../util/renderMath'
-import { getGPTMessagesFromReply } from '../util/replyParser'
+import { textData } from '../../util/botData'
+import { renderMath } from '../../util/renderMath'
+import { getGPTMessagesFromReply } from '../../util/replyParser'
 import Filter from 'bad-words'
 
 export const gpt = async ({ msg, args, mArgs, user, config, replyMessage }) => {

@@ -1,5 +1,5 @@
-import { commandMap } from '.'
-import { textData } from '../util/botData'
+import { commandMap } from '../'
+import { textData } from '../../util/botData'
 
 export const help = async ({
     msg,

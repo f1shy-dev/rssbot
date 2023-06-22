@@ -1,10 +1,12 @@
-import { debug } from './debug'
-import { math } from './math'
-import { gpt } from './gpt'
-import { help } from './help'
-import { kb } from './kb'
-import { bard } from './bard'
-import { clarity } from './clarity'
+import { debug } from './utils/debug'
+import { math } from './utils/math'
+import { help } from './utils/help'
+import { kb } from './utils/kb'
+
+import { gpt } from './ai/gpt'
+import { bard } from './ai/bard'
+import { clarity } from './ai/clarity'
+import { anime } from './fun/anime'
 
 export const commandMap = {
     'AI Tools': [
@@ -48,6 +50,13 @@ export const commandMap = {
             run: debug,
             aliases: ['debug'],
             description: 'shows debug statistics',
+        },
+    ],
+    Fun: [
+        {
+            run: anime,
+            aliases: ['anime', 'airing'],
+            description: `today's anime schedule`,
         },
     ],
 }

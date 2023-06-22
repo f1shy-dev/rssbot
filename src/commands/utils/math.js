@@ -1,9 +1,7 @@
-import { textData } from '../util/botData'
-import { renderMath } from '../util/renderMath'
+import { textData } from '../../util/botData'
+import { renderMath } from '../../util/renderMath'
 // import { create, all } from 'mathjs/'
-import {
-    create
-} from 'mathjs'
+import { create } from 'mathjs'
 
 import { all as numberAll } from 'mathjs/number'
 import { unitDependencies } from 'mathjs'
@@ -41,7 +39,9 @@ export const math = async ({
     const doSlice = mArgs.render && !['eval', 'simplify'].includes(mArgs._[0])
 
     const mode = doSlice ? mArgs.render : mArgs._[0]
-    const math = mArgs._.slice(doSlice ? 0 : 1).join(' ').split('\n')
+    const math = mArgs._.slice(doSlice ? 0 : 1)
+        .join(' ')
+        .split('\n')
     console.log('math', math)
 
     if (mode == 'eval') {
@@ -57,13 +57,14 @@ export const math = async ({
         let res = []
         for (let i = 0; i < math.length; i++) {
             const result = evaluate(math[i], vars)
-            mArgs.render ? res.push(`{{{${result.toTex()}}}}`) : res.push(result.toString())
+            mArgs.render
+                ? res.push(`{{{${result.toTex()}}}}`)
+                : res.push(result.toString())
         }
         text += res.join('<br>')
         console.log('gothere')
 
         return textData(mArgs.render ? await renderMath(text) : text)
-
     }
 
     if (mode == 'simplify') {
@@ -73,12 +74,16 @@ export const math = async ({
         let res = []
         for (let i = 0; i < math.length; i++) {
             const result = simplify(math[i])
-            mArgs.render ? res.push(`{{{${result.toTex()}}}}`) : res.push(result.toString())
+            mArgs.render
+                ? res.push(`{{{${result.toTex()}}}}`)
+                : res.push(result.toString())
         }
         text += res.join('<br>')
 
         return textData(mArgs.render ? await renderMath(text) : text)
     }
 
-    return textData(`<b>😬 Whoops...</b><br>Could not find a mode matching your search. <br><br>📝 Run <code>/math eval [math]</code> to evaluate math.<br>📝 Run <code>/math simplify [math]</code> to simplify math.`)
+    return textData(
+        `<b>😬 Whoops...</b><br>Could not find a mode matching your search. <br><br>📝 Run <code>/math eval [math]</code> to evaluate math.<br>📝 Run <code>/math simplify [math]</code> to simplify math.`
+    )
 }
