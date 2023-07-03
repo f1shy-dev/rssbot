@@ -43,6 +43,14 @@ export const cardData = card =>
         status: 'ok',
     })
 
+export const updateCardData = card =>
+    JSONResponse({
+        response: card,
+        sendResponse: true,
+        responseType: 'card_update',
+        status: 'ok',
+    })
+
 export const simpleErrorData = errMsg =>
     JSONResponse({
         response: esc(errMsg),

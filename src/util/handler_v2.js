@@ -1,9 +1,41 @@
 import { errorData, ignoreData, simpleErrorData } from './botData'
 import { commandMap } from '../commands'
+import { adaptiveMap } from '../adaptives'
 import minimist from 'minimist'
 
+const adaptiveHandler = async (data, evt, config) => {
+    if (!data.adaptiveData) return ignoreData()
+    const { teamsFlowRunContext, cardOutputs } = data.adaptiveData
+
+    if (
+        !cardOutputs ||
+        !cardOutputs['card_id'] ||
+        !teamsFlowRunContext ||
+        !teamsFlowRunContext.MessagePayload ||
+        !teamsFlowRunContext.MessagePayload.From ||
+        !teamsFlowRunContext.MessagePayload.From.User
+    )
+        return ignoreData()
+
+    const user = Object.fromEntries(
+        Object.entries(
+            teamsFlowRunContext.MessagePayload.From.User
+        ).map(([k, v]) => [k.toLowerCase(), v])
+    )
+
+    const run = adaptiveMap[cardOutputs['card_id']]
+    if (!run) return ignoreData()
+    return run({ user, outputs: cardOutputs })
+}
+
 const handle = async (res, evt, config) => {
-    const { msgData, mentionToken, replyMessage } = await res.json()
+    const data = await res.json()
+    if (!data.type) return ignoreData()
+    if (data.type === 'adaptive_response')
+        return adaptiveHandler(data, evt, config)
+    if (!data.type === 'message') return ignoreData()
+
+    const { msgData, mentionToken, replyMessage } = data
     // console.log(JSON.stringify({ msgData, mentionToken, replyMessage }, null, 2))
     // console.log('body', JSON.stringify(msgData.body, null, 2))
 
@@ -24,6 +56,7 @@ const handle = async (res, evt, config) => {
     if (msg === undefined) return errorData(new Error(`CommandMissing`))
 
     const cmdRaw = msg
+        .replace(/&nbsp;/g, ' ')
         .trim()
         .split('\n')[0]
         .split(' ')[0]
@@ -33,7 +66,9 @@ const handle = async (res, evt, config) => {
     if (!cmdRaw.startsWith(config.prefix)) return ignoreData()
     const mapped = Object.values(commandMap)
         .flat()
-        .find(c => c.aliases.includes(cmdRaw.substring(config.prefix.length)))
+        .find(c =>
+            c.aliases.includes(cmdRaw.trim().substring(config.prefix.length))
+        )
 
     if (!mapped)
         return simpleErrorData(
@@ -52,6 +87,7 @@ const handle = async (res, evt, config) => {
         mentionToken,
         replyMessage,
         event: evt,
+        cmdData: mapped,
     })
 }
 

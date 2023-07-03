@@ -1,5 +1,8 @@
+import dayjs from 'dayjs'
+import relativeTime from 'dayjs/plugin/relativeTime'
 import { textData } from '../../util/botData'
 import { getSourcesFromDDG, getTextFromURL } from '../../util/sourceParser'
+import { getUserLastUsed, setUserLastUsed } from '../../util/user_ratelimit'
 
 export const clarity = async ({
     msg,
@@ -8,15 +11,39 @@ export const clarity = async ({
     user,
     config,
     replyMessage,
+    cmdData,
+    event,
 }) => {
-    const can16kusers = [
-        '1e2b0ed7-dd66-4474-bfb2-5cb694e64343',
-        '3e3f009d-4caa-4994-abda-fe1cdf02824d',
-    ]
     const use16k =
-        mArgs['16k'] || mArgs['16'] || mArgs['large'] || mArgs['bigtokenlimit']
+        mArgs['16k'] ||
+        mArgs['16'] ||
+        mArgs['large'] ||
+        mArgs['bigtokenlimit'] ||
+        (mArgs['1'] && mArgs['6'])
 
-    const tokenLimit = can16kusers.includes(user.id) && use16k ? 16384 : 4096
+    let tokenLimit = 4096
+    if (use16k) {
+        if (cmdData['16k_no_ratelimit'].includes(user.id)) tokenLimit = 16384
+        else {
+            const last_used = await getUserLastUsed(user.id, '16k')
+            if (!last_used) tokenLimit = 16384
+            //6 hours
+            if (Date.now() - last_used > 1000 * 60 * 60 * 6) {
+                tokenLimit = 16384
+                event.waitUntil(setUserLastUsed(user.id, '16k'))
+            } else {
+                dayjs.extend(relativeTime)
+                const can_use = dayjs(last_used)
+                    .add(6, 'hour')
+                    .fromNow()
+                return textData(
+                    `<p><b>🚦 Error - Usage limit</b></p><p>You can make a request with the 16,384 token limit again ${can_use}. Bypass this limit by paying £2/month</p>`
+                )
+            }
+        }
+    }
+
+    //  can16kusers.includes(user.id) && use16k ? 16384 :
 
     // limit query length to 500 characters
     if (mArgs._.join(' ').length > 500)
@@ -25,9 +52,8 @@ export const clarity = async ({
             <p>Query too long. Please keep it under 500 characters.</p>`
         )
 
-    let sources = await getSourcesFromDDG(
-        [use16k || [], mArgs._].flat().join(' ')
-    )
+    const parsedQuery = [mArgs['6'] || use16k || [], mArgs._].flat().join(' ')
+    let sources = await getSourcesFromDDG(parsedQuery)
     if (!sources)
         return textData(
             `<p><b>Error</b></p>
@@ -86,7 +112,7 @@ export const clarity = async ({
             content: `Provide an answer to the query based on the following sources. Be original, concise (unless told otherwise), accurate, and helpful. Cite sources as [1] or [2] or [3] after each sentence (not just the very end) to back up your answer if needed (Ex: Correct: [1], Correct: [2][3], Incorrect: [1, 2]). You don't have to cite sources if the query doesn't call for it, such as a simple request or if the sources aren't of any relevance (ignore any sources that seem to have not been scraped correctly, such as those with messages about confirming that you're not a robot). If the query was about a certain website and all sources provided weren't useful then respond generally but make sure to acknowledge that your answer may not be accurate.
 
 
-            Query: ${mArgs._.join(' ')}
+            Query: ${parsedQuery}
             
 
             ${sources
@@ -180,7 +206,7 @@ export const clarity = async ({
         // }
 
         if (tokenLimit > 4096) {
-            footer += ` 😇 Using 16k mode - ${tokenLimit} token limit.`
+            footer += ` 🚀 This request used the ${tokenLimit} token limit.`
             sendFooter = true
         }
 

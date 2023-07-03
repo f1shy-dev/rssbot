@@ -3,7 +3,7 @@ import { renderMath } from '../../util/renderMath'
 import { getGPTMessagesFromReply } from '../../util/replyParser'
 import linkDB from '../../data/kerboodle_more.json'
 import Fuse from 'fuse.js'
-import { baseCard } from '../../old_engine/util/adaptivecard'
+import { baseCard } from '../../util/adaptivecard'
 
 export const debug = async ({
     msg,
@@ -40,6 +40,94 @@ export const debug = async ({
                 },
             ],
         ],
+        action_card: () => [
+            'Action Card',
+            'card',
+
+            [
+                {
+                    type: 'ColumnSet',
+                    columns: [
+                        {
+                            type: 'Column',
+                            width: 2,
+                            items: [
+                                {
+                                    type: 'TextBlock',
+                                    text: 'Tell us about yourself',
+                                    weight: 'bolder',
+                                    size: 'medium',
+                                    wrap: true,
+                                },
+                                {
+                                    type: 'TextBlock',
+                                    text:
+                                        'We just need a few more details to get you booked for the trip of a lifetime!',
+                                    isSubtle: true,
+                                    wrap: true,
+                                },
+                                {
+                                    type: 'TextBlock',
+                                    text:
+                                        "Don't worry, we'll never share or sell your information.",
+                                    isSubtle: true,
+                                    wrap: true,
+                                    size: 'small',
+                                },
+                                {
+                                    type: 'Input.Text',
+                                    id: 'myName',
+                                    label: 'Your name (Last, First)',
+                                    isRequired: true,
+                                    regex: '^[A-Z][a-z]+, [A-Z][a-z]+$',
+                                    errorMessage:
+                                        'Please enter your name in the specified format',
+                                },
+                                {
+                                    type: 'Input.Text',
+                                    id: 'myEmail',
+                                    label: 'Your email',
+                                    regex:
+                                        '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+[.][A-Za-z0-9-]{2,4}$',
+                                    isRequired: true,
+                                    errorMessage:
+                                        'Please enter a valid email address',
+                                },
+                                {
+                                    type: 'Input.Text',
+                                    id: 'myTel',
+                                    label: 'Phone Number (xxx xxx xxxx)',
+                                    regex:
+                                        '^\\(?([0-9]{3})\\)?[-.\\s]?([0-9]{3})[-.\\s]?([0-9]{4})$',
+                                    errorMessage:
+                                        'Invalid phone number. Please enter a 10 digit phone number',
+                                },
+                            ],
+                        },
+                        {
+                            type: 'Column',
+                            width: 1,
+                            items: [
+                                {
+                                    type: 'Image',
+                                    url:
+                                        'https://upload.wikimedia.org/wikipedia/commons/b/b2/Diver_Silhouette%2C_Great_Barrier_Reef.jpg',
+                                    size: 'auto',
+                                    altText: 'Diver in the Great Barrier Reef',
+                                },
+                            ],
+                        },
+                    ],
+                },
+            ],
+
+            [
+                {
+                    type: 'Action.Submit',
+                    title: 'Submit',
+                },
+            ],
+        ],
         msg: () => [
             'Message Data',
             true,
@@ -53,7 +141,20 @@ export const debug = async ({
                           .replace(/</g, '&lt;')
                           .replace(/>/g, '&gt;')
                     : '[no content]'
-            )}</li><li><b>Minimist args</b>: ${JSON.stringify(mArgs)}</li>`,
+            )}</li><li><b>Minimist args</b>: ${JSON.stringify(
+                mArgs
+            )}</li><li><b>Assumed parsed 16k</b>: ${[
+                mArgs['6'] ||
+                    mArgs['16k'] ||
+                    mArgs['16'] ||
+                    mArgs['large'] ||
+                    mArgs['bigtokenlimit'] ||
+                    (mArgs['1'] && mArgs['6']) ||
+                    [],
+                mArgs._,
+            ]
+                .flat()
+                .join(' ')} </li>`,
         ],
         replyMsg: () => [
             'Reply Message Data',
@@ -199,6 +300,7 @@ export const debug = async ({
         return cardData({
             ...baseCard(),
             body: mf[2],
+            actions: mf[3] || [],
         })
 
     return textData(

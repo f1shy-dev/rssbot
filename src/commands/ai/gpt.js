@@ -1,18 +1,60 @@
+import dayjs from 'dayjs'
+import relativeTime from 'dayjs/plugin/relativeTime'
 import { textData } from '../../util/botData'
 import { renderMath } from '../../util/renderMath'
 import { getGPTMessagesFromReply } from '../../util/replyParser'
 import Filter from 'bad-words'
+import { getUserLastUsed, setUserLastUsed } from '../../util/user_ratelimit'
 
-export const gpt = async ({ msg, args, mArgs, user, config, replyMessage }) => {
+export const gpt = async ({
+    msg,
+    args,
+    mArgs,
+    user,
+    config,
+    replyMessage,
+    cmdData,
+    event,
+}) => {
     const { replyMsgs, userId, userName } = getGPTMessagesFromReply(
         replyMessage
     )
 
+    const use16k =
+        mArgs['16k'] ||
+        mArgs['16'] ||
+        mArgs['large'] ||
+        mArgs['bigtokenlimit'] ||
+        (mArgs['1'] && mArgs['6'])
+
+    let tokenLimit = 4096
+    if (use16k) {
+        if (cmdData['16k_no_ratelimit'].includes(user.id)) tokenLimit = 16384
+        else {
+            const last_used = await getUserLastUsed(user.id, '16k')
+            if (!last_used) tokenLimit = 16384
+            //6 hours
+            if (Date.now() - last_used > 1000 * 60 * 60 * 6) {
+                tokenLimit = 16384
+                event.waitUntil(setUserLastUsed(user.id, '16k'))
+            } else {
+                dayjs.extend(relativeTime)
+                const can_use = dayjs(last_used)
+                    .add(6, 'hour')
+                    .fromNow()
+                return textData(
+                    `<p><b>🚦 Error - Usage limit</b></p><p>You can make a request with the 16,384 token limit again ${can_use}. Bypass this limit by paying £2/month</p>`
+                )
+            }
+        }
+    }
+
+    const parsedQuery = [mArgs['6'] || use16k || [], mArgs._].flat().join(' ')
     let messages = [
         ...replyMsgs,
         {
             role: 'user',
-            content: mArgs._.join(' '),
+            content: parsedQuery,
         },
     ]
     if (replyMsgs.length == 0) {
@@ -62,7 +104,7 @@ export const gpt = async ({ msg, args, mArgs, user, config, replyMessage }) => {
             Authorization: `Bearer ${OPENAI_KEY}`,
         },
         body: JSON.stringify({
-            model: 'gpt-3.5-turbo',
+            model: tokenLimit < 4097 ? 'gpt-3.5-turbo' : 'gpt-3.5-turbo-16k',
             messages,
             temperature,
             top_p,
@@ -92,19 +134,28 @@ export const gpt = async ({ msg, args, mArgs, user, config, replyMessage }) => {
             sendFooter = true
         }
 
-        if (data.usage.total_tokens > 2400 && data.usage.total_tokens < 4096) {
-            footer += ` 🟠 Warning: ${
-                replyMsgs.length > 0 ? 'You have ' : 'In this request, you '
-            }used ${data.usage.total_tokens} tokens of the 4096 token limit.`
+        if (tokenLimit > 4096) {
+            footer += ` 🚀 This request used the ${tokenLimit} token limit.`
             sendFooter = true
         }
 
-        if (data.usage.total_tokens > 4095) {
-            footer += ` <b>🚨 Error: ${
+        const sensible = tokenLimit < 4097 ? 2400 : 14000
+        if (
+            data.usage.total_tokens > sensible &&
+            data.usage.total_tokens < tokenLimit
+        ) {
+            footer += ` 🟠 Warning: ${
                 replyMsgs.length > 0 ? 'You have ' : 'In this request, you '
-            }gone over the 4096 token limit</b>, and you may have been cut off.${
+            }used ${
+                data.usage.total_tokens
+            } tokens of the ${tokenLimit} token limit.`
+            sendFooter = true
+        }
+
+        if (data.usage.total_tokens > tokenLimit - 1) {
+            footer += ` <b>🚨 Error: In this request, you have gone over the ${tokenLimit} token limit</b>, and you may have been cut off. ${
                 replyMsgs.length > 0
-                    ? ' You may want to try again without replying to a message.'
+                    ? 'You may want to try again without replying to a message.'
                     : 'You may want to shorten your prompt.'
             }`
             sendFooter = true
@@ -135,7 +186,7 @@ export const gpt = async ({ msg, args, mArgs, user, config, replyMessage }) => {
                 error.data.error.code === 'context_length_exceeded'
             ) {
                 return textData(
-                    `<b>⛔️ Error</b><br>You have gone over the 4096 token limit. ${
+                    `<b>⛔️ Error</b><br>You have gone over the ${tokenLimit} token limit. ${
                         replyMsgs.length > 0
                             ? 'You may want to try again without replying to a message.'
                             : 'You may want to shorten your prompt.'
