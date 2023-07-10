@@ -19,6 +19,7 @@ import { browserHeaders } from './util/browserHeaders.js'
 // router.post('/bot_http/', async (res) => await commandHandlerNew(res, { prefix: "/" }))
 
 router
+
     .post(
         '/bot_http_fast/',
         async (res, evt) => await commandHandlerNew(res, evt, { prefix: '/' })
@@ -82,21 +83,35 @@ router
         )
 
         //seperate blacklist for sites to not get full text from
-        const noFullText = ['linkedin']
+        const noFullText = [
+            'linkedin',
+            '.pdf',
+            '.doc',
+            '.docx',
+            '.ppt',
+            '.pptx',
+        ]
 
         let unblocked = sources.filter(
             s => s.url && noFullText.every(b => !s.url.includes(b))
         )
+        console.log('unblocked', sources)
 
-        const promises = unblocked.slice(0, 3).map(async s => {
-            const full = await getTextFromURL(s.url)
+        const promises = unblocked.slice(0, 4).map(async s => {
+            const full = await Promise.race([
+                getTextFromURL(s.url),
+
+                new Promise((r, _) => setTimeout(() => r(null), 800)),
+            ])
             if (!full) return s
             return { ...s, full }
         })
 
         sources = [
             ...(await Promise.all(promises)),
-            ...(sources.filter(s => !unblocked.includes(s)).slice(0, 4) || []),
+            ...(sources
+                .filter(s => !promises.some(u => u.url === s.url))
+                .slice(0, 4) || []),
         ]
 
         return new Response(JSON.stringify(sources, null, 2), {

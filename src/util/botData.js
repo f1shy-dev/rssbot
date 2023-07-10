@@ -62,7 +62,7 @@ export const simpleErrorData = errMsg =>
 export const errorData = error =>
     JSONResponse({
         response: esc(
-            `<b>⛔️ Error</b><br>An error occured while running your command.<br><br><b>Details</b><br>${error.message}`
+            `<b>⛔️ Error</b><br>An error occured while processing your query.<br><br><b>Details</b><br>${error.message}`
         ),
         sendResponse: true,
         responseType: 'text',

@@ -5,6 +5,7 @@ import { renderMath } from '../../util/renderMath'
 import { getGPTMessagesFromReply } from '../../util/replyParser'
 import Filter from 'bad-words'
 import { getUserLastUsed, setUserLastUsed } from '../../util/user_ratelimit'
+import { logTokenEvent } from '../../util/user_tokenlog'
 
 export const gpt = async ({
     msg,
@@ -20,13 +21,17 @@ export const gpt = async ({
         replyMessage
     )
 
-    const use16k =
+    let use16k =
         mArgs['16k'] ||
         mArgs['16'] ||
         mArgs['large'] ||
         mArgs['bigtokenlimit'] ||
         (mArgs['1'] && mArgs['6'])
 
+    const parsedQuery = [mArgs['6'] || use16k || [], mArgs._].flat().join(' ')
+
+    // lets just make it use 16k if its longer than 4096, but enforce the ratelimits
+    if (parsedQuery.length > 3800) use16k = true
     let tokenLimit = 4096
     if (use16k) {
         if (cmdData['16k_no_ratelimit'].includes(user.id)) tokenLimit = 16384
@@ -49,7 +54,6 @@ export const gpt = async ({
         }
     }
 
-    const parsedQuery = [mArgs['6'] || use16k || [], mArgs._].flat().join(' ')
     let messages = [
         ...replyMsgs,
         {
@@ -120,6 +124,15 @@ export const gpt = async ({
             err.data = data
             throw err
         }
+        event.waitUntil(
+            logTokenEvent(
+                user.id,
+                user.displayName,
+                data.usage.prompt_tokens,
+                data.usage.completion_tokens,
+                ['gpt', tokenLimit < 4097 ? '4k' : '16k']
+            )
+        )
         const text = data.choices[0].message.content.trim()
         messages.push({
             role: 'assistant',

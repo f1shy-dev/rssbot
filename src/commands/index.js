@@ -7,6 +7,7 @@ import { gpt } from './ai/gpt'
 import { bard } from './ai/bard'
 import { clarity } from './ai/clarity'
 import { anime } from './fun/anime'
+import { aiusage } from './utils/aiusage'
 
 export const commandMap = {
     'AI Tools': [
@@ -58,6 +59,16 @@ export const commandMap = {
             run: debug,
             aliases: ['debug'],
             description: 'shows debug statistics',
+        },
+        {
+            run: aiusage,
+            aliases: ['aiusage'],
+            description: 'shows AI usage statistics',
+            alldata_userids: [
+                '1e2b0ed7-dd66-4474-bfb2-5cb694e64343',
+                '3e3f009d-4caa-4994-abda-fe1cdf02824d',
+                'b32b5b2b-009e-4177-8811-fb6991e04b0e',
+            ],
         },
     ],
     Fun: [

@@ -3,6 +3,8 @@ import relativeTime from 'dayjs/plugin/relativeTime'
 import { textData } from '../../util/botData'
 import { getSourcesFromDDG, getTextFromURL } from '../../util/sourceParser'
 import { getUserLastUsed, setUserLastUsed } from '../../util/user_ratelimit'
+import { logTokenEvent } from '../../util/user_tokenlog'
+import { cacheSource } from '../../util/source_cache'
 
 export const clarity = async ({
     msg,
@@ -11,16 +13,21 @@ export const clarity = async ({
     user,
     config,
     replyMessage,
+    httpRes,
     cmdData,
     event,
 }) => {
-    const use16k =
+    let use16k =
         mArgs['16k'] ||
         mArgs['16'] ||
         mArgs['large'] ||
         mArgs['bigtokenlimit'] ||
         (mArgs['1'] && mArgs['6'])
 
+    const parsedQuery = [mArgs['6'] || use16k || [], mArgs._].flat().join(' ')
+
+    // lets just make it use 16k if its longer than 4096, but enforce the ratelimits
+    if (parsedQuery.length > 3800) use16k = true
     let tokenLimit = 4096
     if (use16k) {
         if (cmdData['16k_no_ratelimit'].includes(user.id)) tokenLimit = 16384
@@ -43,8 +50,6 @@ export const clarity = async ({
         }
     }
 
-    //  can16kusers.includes(user.id) && use16k ? 16384 :
-
     // limit query length to 500 characters
     if (mArgs._.join(' ').length > 500)
         return textData(
@@ -52,7 +57,6 @@ export const clarity = async ({
             <p>Query too long. Please keep it under 500 characters.</p>`
         )
 
-    const parsedQuery = [mArgs['6'] || use16k || [], mArgs._].flat().join(' ')
     let sources = await getSourcesFromDDG(parsedQuery)
     if (!sources)
         return textData(
@@ -75,13 +79,23 @@ export const clarity = async ({
     )
 
     //seperate blacklist for sites to not get full text from
-    const noFullText = ['linkedin']
+    const noFullText = ['linkedin', '.pdf', '.doc', '.docx', '.ppt', '.pptx']
 
     let unblocked = sources.filter(
         s => s.url && noFullText.every(b => !s.url.includes(b))
     )
 
-    const promises = unblocked.slice(0, 2).map(async s => {
+    // if the query contains a URL, lets fetch the full text from that URL (assuming it isnt already in the sources)
+    const urlMatches =
+        parsedQuery.match(
+            /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)/
+        ) || []
+    urlMatches.map(async url => {
+        if (sources.some(s => s.url === url)) return
+        unblocked.push({ url })
+    })
+
+    const promises = unblocked.slice(0, 4).map(async s => {
         // const full = await getTextFromURL(s.url)
         const full = await Promise.race([
             getTextFromURL(s.url),
@@ -93,15 +107,21 @@ export const clarity = async ({
 
     sources = [
         ...(await Promise.all(promises)),
-        ...(sources.filter(s => !unblocked.includes(s)).slice(0, 4) || []),
+        ...(sources
+            .filter(s => !promises.some(u => u.url === s.url))
+            .slice(0, 4) || []),
     ]
 
-    const max = tokenLimit - (tokenLimit < 4097 ? 684 : 1600)
+    // 1 token = 3.8 characters
+    const max = Math.floor(
+        (tokenLimit - (tokenLimit < 4097 ? 684 : 1600)) * 3.8
+    )
+
     let sliceLen =
         sources.map(i => i.full || i.brief).join('').length > max
             ? max / sources.length
             : max
-
+    // console.log(max, sliceLen, tokenLimit)
     let messages = [
         {
             role: 'system',
@@ -109,18 +129,38 @@ export const clarity = async ({
         },
         {
             role: 'user',
-            content: `Provide an answer to the query based on the following sources. Be original, concise (unless told otherwise), accurate, and helpful. Cite sources as [1] or [2] or [3] after each sentence (not just the very end) to back up your answer if needed (Ex: Correct: [1], Correct: [2][3], Incorrect: [1, 2]). You don't have to cite sources if the query doesn't call for it, such as a simple request or if the sources aren't of any relevance (ignore any sources that seem to have not been scraped correctly, such as those with messages about confirming that you're not a robot). If the query was about a certain website and all sources provided weren't useful then respond generally but make sure to acknowledge that your answer may not be accurate.
+            content: `Provide an answer to the query based on the following sources. Be original, concise (unless told otherwise), accurate, and helpful. Cite sources as [1] or [2] or [3] after each sentence (not just the very end) to back up your answer if needed (Ex: Correct: [1], Correct: [2][3], Incorrect: [1, 2]). You don't have to cite sources if the query doesn't call for it, such as a simple request or if the sources aren't of any relevance (ignore any sources that seem to have not been scraped correctly, such as those with messages about confirming that you're not a robot, and ideally prefer full sources over brief sources). If the query was about a certain website and all sources provided weren't useful then respond generally but make sure to acknowledge that your answer may not be accurate.
 
 
             Query: ${parsedQuery}
             
 
             ${sources
+                //full sources first, then brief sources
+                .sort(
+                    (a, b) =>
+                        //sort based on length of full or brief text
+                        (b.full || b.brief || '').length -
+                        (a.full || a.brief || '').length
+                )
                 .map((source, idx) =>
                     source.full || source.brief
-                        ? `Source [${idx + 1}]:\n${(
-                              source.full || source.brief
-                          ).slice(0, sliceLen)}`
+                        ? `${
+                              source.full &&
+                              (source.full.length > source.brief.length ||
+                                  !source.brief)
+                                  ? 'Full'
+                                  : 'Brief'
+                          } Source [${idx + 1}]:\n${
+                              (source.full &&
+                                  source.full.length > source.brief.length) ||
+                              !source.brief
+                                  ? source.full
+                                  : source.brief
+                          }).slice(
+                              0,
+                              Math.floor(sliceLen)
+                          )}`
                         : false
                 )
                 .filter(Boolean)
@@ -178,6 +218,25 @@ export const clarity = async ({
             err.data = data
             throw err
         }
+
+        event.waitUntil(
+            logTokenEvent(
+                user.id,
+                user.displayName,
+                data.usage.prompt_tokens,
+                data.usage.completion_tokens,
+                ['clarity', tokenLimit < 4097 ? '4k' : '16k']
+            )
+        )
+
+        event.waitUntil(
+            Promise.all(
+                sources
+                    .filter(s => s.full)
+                    .map(s => cacheSource(s.url, s.brief, s.full))
+            )
+        )
+
         let text = data.choices[0].message.content.trim()
 
         // replace [1] with <a href="url">[1]</a>
@@ -211,7 +270,7 @@ export const clarity = async ({
         }
 
         if (data.usage.total_tokens > tokenLimit - 1) {
-            footer += ` <b>🚨 Error: In this request, you havegone over the ${tokenLimit} token limit</b>, and you may have been cut off. You may want to shorten your prompt.`
+            footer += ` <b>🚨 Error: In this request, you have gone over the ${tokenLimit} token limit</b>, and you may have been cut off. You may want to shorten your prompt.`
             sendFooter = true
         }
 

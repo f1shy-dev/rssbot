@@ -1,6 +1,7 @@
 import { parse } from 'parse5'
 import { queryAll, query, hasAttribute, getAttribute } from '@parse5/tools'
 import { browserHeaders, cookieJar } from './browserHeaders'
+import { findSourceInCache } from './source_cache'
 
 function getNodeTextContent(node, filter) {
     if (!node) return ''
@@ -37,6 +38,13 @@ export const hasClassOrID = (node, classes) => {
 const hcid = c => node => hasClassOrID(node, c)
 
 export const getTextFromURL = async url => {
+    // check cache
+    const cache = await findSourceInCache(url)
+    if (cache && cache.full) {
+        console.log(`[source getText] ${url} found in cache`)
+        return cache.full
+    }
+
     let resolved = false
     let tries = 0
     let response = null

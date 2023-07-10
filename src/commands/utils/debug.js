@@ -201,6 +201,21 @@ export const debug = async ({
                 ' '
             )}</a><br><img src="${mArgs._.join(' ')}">`,
         ],
+        kv: async () => {
+            if (!mArgs._[0]) return ['KV Test', false, 'No key provided']
+            const res = await MAINKV.get(mArgs._[0])
+            if (!res) return ['KV Test', false, 'No value found']
+
+            return [
+                'FetchKVItem',
+                false,
+                `<pre>${
+                    res.startsWith('{') || res.startsWith('[')
+                        ? JSON.stringify(JSON.parse(res), null, 2)
+                        : res
+                }</pre>`,
+            ]
+        },
         kbtest: () => {
             // either /debug -m kbtest -b [book] -p [page] or /debug -m kbtest [one word to search book] [search]
             const bookName = mArgs.b || mArgs._[0]

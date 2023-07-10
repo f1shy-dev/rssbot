@@ -87,6 +87,7 @@ const handle = async (res, evt, config) => {
         mentionToken,
         replyMessage,
         event: evt,
+        httpRes: res,
         cmdData: mapped,
     })
 }
