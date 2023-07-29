@@ -21,8 +21,9 @@
 
 export const JSONResponse = (data, param) =>
     new Response(JSON.stringify(data, null, 2), {
+        ...param,
         headers: {
             'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
         },
-        ...param,
     })

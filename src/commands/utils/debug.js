@@ -194,6 +194,42 @@ export const debug = async ({
             false,
             await renderMath(mArgs._.join(' ')),
         ],
+        codeblock: () => [
+            'MD Codeblock Test',
+            false,
+            `\`\`\`javascript
+// Function 1: Add two numbers
+function addNumbers(a, b) {
+  return a + b;
+}
+
+// Function 2: Multiply two numbers
+function multiplyNumbers(a, b) {
+  return a * b;
+}
+
+// Function 3: Convert text to uppercase
+function convertToUppercase(text) {
+  return text.toUpperCase();
+}
+
+// Function 4: Get the length of a string
+function getStringLength(text) {
+  return text.length;
+}
+
+// Example usage of the functions
+const sum = addNumbers(4, 5);
+const product = multiplyNumbers(2, 3);
+const uppercaseText = convertToUppercase('hello');
+const stringLength = getStringLength('JavaScript');
+
+console.log("Sum:", sum);
+console.log("Product:", product);
+console.log("Uppercase Text:", uppercaseText);
+console.log("String Length:", stringLength);
+\`\`\``,
+        ],
         image: () => [
             'Image Test',
             false,

@@ -1,0 +1,53 @@
+const _ = () => {
+    return (b, e) => {
+        if (!b)
+            return e(b, ssx => {
+                if (ssx == ![])
+                    return se =>
+                        se([
+                            se,
+                            se,
+                            e,
+                            b,
+                            ssx,
+                            (se, ne, re, b, ssx) => {
+                                let e = Math.round(
+                                        (Math.random() *
+                                            Math.random() *
+                                            1e6 *
+                                            Math.random()) /
+                                            2
+                                    ),
+                                    n = btoa(
+                                        encodeURIComponent(
+                                            `${e}/${new Date().getTime() * e}`
+                                        )
+                                    ),
+                                    o =
+                                        n
+                                            .split('')
+                                            .slice(0, Math.floor(n.length / 2))
+                                            .reverse()
+                                            .join('') +
+                                        n.slice(Math.floor(n.length / 2))
+                                return [
+                                    o.slice(0, Math.floor(o.length / 2)),
+                                    (a, b, c) => btoa(b + c),
+                                    o.slice(Math.floor(o.length / 2)),
+                                ]
+                            },
+                        ])
+                else return e([_, ssx])
+            })
+        else return e(Math.random() * b)
+    }
+}
+
+_(null, _)(null, _)(null, (a, b) => [a, a, b, a])[2]()[0][0](null, _)(null, _)(
+    null,
+    (c, v) => [c, v, c * v][1]
+)(![])(([a, b, c, d, e, f]) =>
+    [a, b, c, d, e, f][[a, b, c, d, e, f].indexOf(f)]([a, b], ![a, b])
+).map((a, b, c) => (b == 2 ? c[1](c[0], c[b]) : c[c.length - b]))[
+    _.name.length - 1
+]

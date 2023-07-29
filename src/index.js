@@ -1,126 +1,135 @@
-import { Router } from 'itty-router'
-// import { commandHandler as commandHandlerOld } from './old_engine/util/handler.js'
+import { Router, createCors, error, json, html } from 'itty-router'
 import { commandHandler as commandHandlerNew } from './util/handler_v2.js'
 const router = Router()
 import { getSourcesFromDDG, getTextFromURL } from './util/sourceParser.js'
-import { stringify } from './util/json_util.js'
+import jwt from '@tsndr/cloudflare-worker-jwt'
+import { checkAuth } from './util/auth.js'
 import { browserHeaders } from './util/browserHeaders.js'
-
-// const config = {
-//     prefix: '!',
-// }
-
-// router.get('/rssbot/', async ({ query }) => {
-//     // if (query.m && query.m.startsWith('/')) return await commandHandlerNew(query, { prefix: "/" })
-//     return commandHandlerOld(query, config)
-
-// })
-
-// router.post('/bot_http/', async (res) => await commandHandlerNew(res, { prefix: "/" }))
-
+const { preflight, corsify } = createCors({
+    origins: ['*', 'http://localhost:5173'],
+    methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
+    headers: ['Content-Type', 'Authorization', 'X-User-ID'],
+})
 router
+    .all('*', preflight)
+    .post('/jwt/:key', async (res, evt) => {
+        const authorisedUsers = USERKEYS.split(',')
+        const userID = res.headers.get('x-user-id')
+        let key = res.params.key
 
-    .post(
-        '/bot_http_fast/',
-        async (res, evt) => await commandHandlerNew(res, evt, { prefix: '/' })
-    )
-    .get('/res_info', async (res, evt) => {
-        return new Response(
-            stringify({
-                headers: Object.fromEntries(res.headers.entries()),
-                url: res.url,
-                host: res.url.match(/https?:\/\/([^\/]+)/)[1],
-                method: res.method,
-                body: await res.text(),
+        if (!userID || !key || !authorisedUsers.includes(userID))
+            return corsify(error(401))
+        let jwtKey = atob(key)
+        jwtKey =
+            jwtKey
+
+                .split('')
+                .slice(0, Math.floor(jwtKey.length / 2))
+                .reverse()
+                .join('') + jwtKey.slice(Math.floor(jwtKey.length / 2))
+
+        jwtKey = decodeURIComponent(atob(jwtKey))
+        const random = Number(jwtKey.split('/')[0])
+        const dateHash = Number(jwtKey.split('/')[1])
+        const clientDate =
+            dateHash /
+            Number(random.toString().slice(Math.floor(random.length / 2)))
+
+        const serverSig = Math.round((new Date().getTime() * random) / 3.7)
+        const computedSig = Math.round((clientDate * random) / 3.7)
+        console.log(jwtKey)
+        const withinWindow = serverSig / computedSig < 1.0000000001
+        if (!withinWindow) return corsify(error(401))
+        const token = await jwt.sign(
+            {
+                userID,
+                cd: clientDate,
+                key,
+                exp: Math.floor(Date.now() / 1000) + 8 * (60 * 60), // Expires: Now + 2h
+            },
+            JWT_SECRET
+        )
+
+        return corsify(json({ token }))
+    })
+    .post('/v1c_relay/', async (res, evt) => {
+        const { valid, userID } = await checkAuth(res)
+        if (
+            !valid ||
+            !((await MAINKV.get('ALLOWED_V1C')) || ALLOWED_V1C)
+                .split(',')
+                .includes(userID)
+        )
+            return error(401)
+
+        return corsify(
+            await fetch('https://api.openai.com/v1/chat/completions', {
+                body: (await res.text()) || '{}',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${OPENAI_KEY}`,
+                },
+                method: 'POST',
             })
         )
     })
 
+    .post('/bot_http_fast/', async (res, evt) => {
+        const { valid, userID } = await checkAuth(res)
+        if (!valid) return error(401)
+        return await commandHandlerNew(res, evt, userID, { prefix: '/' })
+    })
+    .post('/bot_prefix-exclaim/', async (res, evt) => {
+        const { valid, userID } = await checkAuth(res)
+        if (!valid) return error(401)
+        return await commandHandlerNew(res, evt, userID, { prefix: '!' })
+    })
+    .get('/check_auth', async (res, evt) => {
+        const { valid, userID } = await checkAuth(res)
+        return corsify(json({ valid, userID }))
+    })
+    .get('/res_info', async (res, evt) =>
+        json({
+            headers: Object.fromEntries(res.headers.entries()),
+            url: res.url,
+            host: res.url.match(/https?:\/\/([^\/]+)/)[1],
+            method: res.method,
+            body: await res.text(),
+        })
+    )
     .get('/proxy', async (res, evt) => {
         const url = new URL(res.url).searchParams.get('url')
-        if (!url)
-            return new Response(
-                stringify({ status: 400, body: 'No url provided!' })
-            )
+        if (!url) return error(400, { body: 'No url provided!' })
 
         const full = await getTextFromURL(url)
-        if (!full)
-            return new Response(
-                stringify({ status: 400, body: 'Error getting source!' })
-            )
+        if (!full) return error(400, { body: 'Error getting source!' })
 
-        return new Response(full, {
-            headers: {
-                'content-type': 'text/html; charset=UTF-8',
-                cache: 'no-cache',
-            },
-        })
+        return corsify(html(full))
     })
-
-    .get('/google_proxy', async (res, evt) => {
+    .get('/ddg', async (res, evt) => {
         const query = new URL(res.url).searchParams.get('q')
-        if (!query)
-            return new Response(
-                stringify({ status: 400, body: 'No url provided!' })
+        if (!query) return error(400, { body: 'No query provided!' })
+        return corsify(
+            html(
+                await fetch('https://duckduckgo.com/html/?q=' + query, {
+                    headers: browserHeaders(
+                        'https://duckduckgo.com/html/?q=' + query
+                    ),
+                })
             )
-        let sources = await getSourcesFromDDG(query)
-        if (!sources)
-            return new Response(
-                stringify({ status: 400, body: 'Error getting source!' })
-            )
-
-        sources = sources.filter(
-            s =>
-                s.url &&
-                [
-                    //blacklist
-                    'google',
-                    'facebook',
-                    'instagram',
-                    'youtube',
-                    'tiktok',
-                ].every(b => !s.url.includes(b))
         )
-
-        //seperate blacklist for sites to not get full text from
-        const noFullText = [
-            'linkedin',
-            '.pdf',
-            '.doc',
-            '.docx',
-            '.ppt',
-            '.pptx',
-        ]
-
-        let unblocked = sources.filter(
-            s => s.url && noFullText.every(b => !s.url.includes(b))
-        )
-        console.log('unblocked', sources)
-
-        const promises = unblocked.slice(0, 4).map(async s => {
-            const full = await Promise.race([
-                getTextFromURL(s.url),
-
-                new Promise((r, _) => setTimeout(() => r(null), 800)),
-            ])
-            if (!full) return s
-            return { ...s, full }
-        })
-
-        sources = [
-            ...(await Promise.all(promises)),
-            ...(sources
-                .filter(s => !promises.some(u => u.url === s.url))
-                .slice(0, 4) || []),
-        ]
-
-        return new Response(JSON.stringify(sources, null, 2), {
-            headers: {
-                'content-type': 'text/json; charset=UTF-8',
-                cache: 'no-cache',
-            },
-        })
     })
-    .all('*', () => new Response('hello world!', { status: 404 }))
+    .get('/html_proxy', async (res, evt) => {
+        const url = new URL(res.url).searchParams.get('url')
+        if (!url) return error(400, { body: 'No url provided!' })
+        return corsify(
+            html(
+                await fetch(url, {
+                    headers: browserHeaders(url),
+                })
+            )
+        )
+    })
+    .all('*', () => error(404, { body: 'hello world!' }))
 
 addEventListener('fetch', e => e.respondWith(router.handle(e.request, e)))

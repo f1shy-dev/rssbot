@@ -1,0 +1,22 @@
+{
+  "msgData": {
+    "from": {
+      "application": null,
+      "device": null,
+      "user": {
+        "@odata.type": "#microsoft.graph.teamworkUserIdentity",
+        "id": "1e2b0ed7-dd66-4474-bfb2-5cb694e64343",
+        "displayName": "Vrishank AGARWAL",
+        "userIdentityType": "aadUser",
+        "tenantId": "fcade8c8-5508-4dd1-8a64-e92a2eeed6cf"
+      }
+    },
+    "body": {
+      "plainTextContent": "/clarity -16 hey"
+    },
+    "attachments": [],
+    "mentions": [],
+    "conversationId": "19:784ffc65323e44a1911199fa28f0182b@thread.v2"
+  },
+  "type": "message"
+}

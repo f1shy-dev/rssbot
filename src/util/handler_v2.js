@@ -3,7 +3,7 @@ import { commandMap } from '../commands'
 import { adaptiveMap } from '../adaptives'
 import minimist from 'minimist'
 
-const adaptiveHandler = async (data, evt, config) => {
+const adaptiveHandler = async (data, evt, jwtUserID, config) => {
     if (!data.adaptiveData) return ignoreData()
     const { teamsFlowRunContext, cardOutputs } = data.adaptiveData
 
@@ -28,7 +28,7 @@ const adaptiveHandler = async (data, evt, config) => {
     return run({ user, outputs: cardOutputs })
 }
 
-const handle = async (res, evt, config) => {
+const handle = async (res, evt, jwtUserID, config) => {
     const data = await res.json()
     if (!data.type) return ignoreData()
     if (data.type === 'adaptive_response')
@@ -92,10 +92,10 @@ const handle = async (res, evt, config) => {
     })
 }
 
-export const commandHandler = async (res, evt, config) => {
+export const commandHandler = async (res, evt, jwtUserID, config) => {
     // try catch handle()
     try {
-        const response = await handle(res, evt, config)
+        const response = await handle(res, evt, jwtUserID, config)
         // copy response and log the body being sewnt
         // const responseCopy = response.clone()
         // if (responseCopyX.body) {
