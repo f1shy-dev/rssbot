@@ -27,8 +27,15 @@ export const gpt = async ({
         mArgs['large'] ||
         mArgs['bigtokenlimit'] ||
         (mArgs['1'] && mArgs['6'])
+    let useGPT4 =
+        mArgs['4'] ||
+        mArgs['GPT4'] ||
+        mArgs['gpt4'] ||
+        mArgs['gpt-4'] ||
+    (mArgs['1'] && mArgs['4']   )
 
-    const parsedQuery = [mArgs['6'] || use16k || [], mArgs._].flat().join(' ')
+    //const parsedQuery = [mArgs['6'] || use16k || [], mArgs._].flat().join(' ')
+    const parsedQuery = [mArgs['6'] || use16k || useGPT4 || [], mArgs._].flat().join(' ')
 
     // lets just make it use 16k if its longer than 4096, but enforce the ratelimits
     if (parsedQuery.length > 3800) use16k = true
@@ -105,10 +112,10 @@ export const gpt = async ({
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${OPENAI_KEY}`,
-        },
+            Authorization: useGPT4 ? `Bearer ${GPT4_KEY}` : `Bearer ${OPENAI_KEY}`,
+            },
         body: JSON.stringify({
-            model: tokenLimit < 4097 ? 'gpt-3.5-turbo' : 'gpt-3.5-turbo-16k',
+            model: useGPT4 ? 'gpt-4' : (use16k && tokenLimit < 4097 ? 'gpt-3.5-turbo-16k' : 'gpt-3.5-turbo'),
             messages,
             temperature,
             top_p,
