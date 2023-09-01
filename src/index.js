@@ -6,14 +6,14 @@ import jwt from '@tsndr/cloudflare-worker-jwt'
 import { checkAuth } from './util/auth.js'
 import { browserHeaders } from './util/browserHeaders.js'
 const { preflight, corsify } = createCors({
-    origins: ['*', 'http://localhost:5173'],
+    // origins: ['*', 'http://localhost:5173'],
     methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
-    headers: ['Content-Type', 'Authorization', 'X-User-ID'],
+    // headers: ['Content-Type', 'Authorization', 'X-User-ID'],
 })
 router
     .all('*', preflight)
     .post('/jwt/:key', async (res, evt) => {
-        const authorisedUsers = USERKEYS.split(',')
+        const authorisedUsers = (await MAINKV.get('USERKEYS')) || USERKEYS
         const userID = res.headers.get('x-user-id')
         let key = res.params.key
 
